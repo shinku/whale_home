@@ -1,0 +1,122 @@
+body {
+  font-family: "Microsoft YaHei", "SimSun", sans-serif;
+  background-color: #f9f3f3;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: #333;
+}
+
+.invitation-card {
+  width: 90%;
+  max-width: 600px;
+  background: linear-gradient(135deg, #fff 0%, #fff9f9 100%);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(206, 38, 38, 0.2);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #e8c8c8;
+}
+.img {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 0;
+  height: 360px;
+  overflow: hidden;
+}
+.header {
+  background-color: #c72c41;
+  color: white;
+  padding: 30px 20px;
+  text-align: center;
+  position: relative;
+  height: 360px;
+}
+
+.header:after {
+  content: "";
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: #c72c41;
+  transform: skewY(-2deg);
+  z-index: -1;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 5px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.couple-names {
+  font-size: 36px;
+  font-weight: bold;
+  margin: 20px 0;
+  letter-spacing: 8px;
+}
+
+.content {
+  padding: 30px;
+  text-align: center;
+}
+
+.date-time {
+  font-size: 22px;
+  color: #c72c41;
+  margin: 20px 0;
+  font-weight: bold;
+}
+
+.location {
+  padding: 20px;
+  border-radius: 10px;
+  margin: 25px 0;
+  border-top:2px solid #c72c41;
+  border-bottom:2px solid #c72c41;
+}
+
+.location h3 {
+  margin-top: 0;
+  color: #c72c41;
+}
+
+.footer {
+  padding: 20px;
+  text-align: center;
+  font-size: 16px;
+  color: #888;
+  border-top: 1px dashed #e8c8c8;
+}
+
+.decoration {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  opacity: 0.1;
+}
+
+.decoration.top-left {
+  top: 10px;
+  left: 10px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%23ffffff" d="M50 0 L100 50 L50 100 L0 50 Z"/></svg>');
+}
+
+.decoration.bottom-right {
+  bottom: 10px;
+  right: 10px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%23ffffff" cx="50" cy="50" r="50"/></svg>');
+}
+
+.heart {
+  color: #c72c41;
+  font-size: 24px;
+  margin: 0 5px;
+}
