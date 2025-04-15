@@ -1,16 +1,6 @@
-body {
-  font-family: "Microsoft YaHei", "SimSun", sans-serif;
-  background-color: #f9f3f3;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  color: #333;
-}
 
 .invitation-card {
+  display: block;
   width: 90%;
   max-width: 600px;
   background: linear-gradient(135deg, #fff 0%, #fff9f9 100%);
@@ -19,6 +9,8 @@ body {
   overflow: hidden;
   position: relative;
   border: 1px solid #e8c8c8;
+  margin: 0 auto;
+  margin-top: 10px;
 }
 .img {
   position: absolute;
