@@ -289,12 +289,15 @@ export default function BannerPage() {
           <p className="text-gray-500">加载中...</p>
         </div>
       ) : (
-        <div className="mt-6">
+        <div className="mt-6 inline-block w-full">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Banner列表</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {banners.map(banner => (
+          <div className="flex flex-wrap gap-4" style={{ width: "1000px", flexWrap: "wrap" }}>
+            {[...banners].map(banner => (
               <div 
                 key={banner.id}
+                style={{
+                  width: '300px'
+                }}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
               >
                 <div className="mb-3">
@@ -306,7 +309,7 @@ export default function BannerPage() {
                     className="rounded-lg w-full"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 w-[100px]">
                   <p><span className="font-medium">名称:</span> {banner.name}</p>
                   <p><span className="font-medium">类型:</span> {banner.type}</p>
                   <div>
@@ -315,7 +318,15 @@ export default function BannerPage() {
                     <p className="font-medium">内容:</p>
                     <p>{banner.action.split('::')[1]}</p>
                   </div>
-                  <p><span className="font-medium">状态:</span> {banner.status}</p>
+                  <p>
+                    <span className="font-medium">状态:</span>
+                    <span className={`${banner.status === 'active'?" !text-[green]":" !text-[#ff0000]"}`}
+                    style={{
+                      color: banner.status === 'active' ? 'green' : 'red'
+                    }}>{
+                      banner.status
+                    }</span> 
+                  </p>
                 </div>
                 <Mbutton 
                   onClick={() => handleEdit(banner)}
