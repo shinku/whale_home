@@ -1,4 +1,5 @@
-import { getApiHost } from "../[...slug]/route";
+import { getApiHost } from "@/utils";
+
 
 export const POST = async (request: Request) => { 
   const url = getApiHost()+"api/file/upload";
