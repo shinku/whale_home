@@ -5,24 +5,28 @@ import { NextRequest, NextResponse } from "next/server";
 
 
 
-
+type TRouteContext = {
+  params: Promise<{
+    slug: string[]
+  }>
+};
 
 // app/api/users/route.js
 
-export async function GET(request:NextRequest,option:{params: {slug: string[]}}) {
-  return handleRequest(request,option);
+export async function GET(request:NextRequest, option:TRouteContext) {
+  return handleRequest(request, option);
 }
-export async function POST(request:NextRequest,option:{params: {slug: string[]}}) {
-  return handleRequest(request,option);
+export async function POST(request:NextRequest, {params}:TRouteContext) {
+  return handleRequest(request, {params});
 }
-export async function PUT(request:NextRequest,option:{params: {slug: string[]}}) {
-  return handleRequest(request,option);
+export async function PUT(request:NextRequest, {params}:TRouteContext) {
+  return handleRequest(request, {params});
 }
-export async function DELETE(request:NextRequest,option:{params: {slug: string[]}}) {
-  return handleRequest(request,option);
+export async function DELETE(request:NextRequest, {params}:TRouteContext) {
+  return handleRequest(request, {params});
 }
 
-async function handleRequest(request:NextRequest,{params}:{params: {slug: string[]}}) {
+async function handleRequest(request:NextRequest,{params}:TRouteContext) {
   const {slug} = await params;
   // 
   let distnay = getApiHost()+"admin/"+slug.join('/');
