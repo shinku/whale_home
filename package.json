@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
-    "startapp":"pm2 start ecosystem.config.js",
+    "startapp":"pm2 stop next-app || true && NODE_ENV=production pm2 start ecosystem.config.js",
     "lint": "next lint"
   },
   "dependencies": {
