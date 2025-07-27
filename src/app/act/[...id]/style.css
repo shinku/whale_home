@@ -46,20 +46,31 @@ input, textarea {
 .language-switcher button {
   padding: 4px 8px;
   border: 1px solid #ddd;
-  border-radius: 0px !important;
   background: transparent !important;
   cursor: pointer;
   color: black !important;
   width: 40% !important;
   font-size: 20px;
   font-weight: bold;
+  background: #D9D9D9 !important;
+  border-radius: 12px;
 }
 
 .language-switcher button.active {
   color: black;
   border-bottom: 2px solid black;
 }
-
+.result-icon {
+  display: flex;
+  justify-content: space-around;
+}
+.result-icon button {
+  border-radius: 12px !important;
+  padding: 4px 8px !important;
+  background: #D9D9D9 !important;
+  border-radius: 12px;
+  color: black;
+}
 .ai-writer-container .form-group {
   background: #FBF9F9;
   border-radius: 12px;
