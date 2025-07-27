@@ -1,8 +1,16 @@
-import { AiMathTeacher } from "./subpage/client/AiMathTeacher";
+import type { Metadata } from 'next';
+import AiMathTeacher from "./subpage/client/AiMathTeacher";
 import AIWriter from "./subpage/client/AIWriter";
 
 type PageProps = {
   params: Promise<{id:string}>
+}
+
+export async function generateMetadata({ params }: { params: { id: string[] } }): Promise<Metadata> {
+  const actId = params.id[0]
+  return {
+    title: actId === 'math' ? '智能口算练习' : 'AI写作'
+  }
 }
 
 const actMap:{[key:string]: React.FC} = {
