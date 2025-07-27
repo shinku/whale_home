@@ -3,7 +3,7 @@ import AiMathTeacher from "./subpage/client/AiMathTeacher";
 import AIWriter from "./subpage/client/AIWriter";
 
 type PageProps = {
-  params: Promise<{id:string}>
+  params: Promise<{id:string[]}>
 }
 
 export async function generateMetadata({ params }: { params: { id: string[] } }): Promise<Metadata> {
