@@ -23,8 +23,6 @@
 /* 防止长按弹出菜单 */
 * {
   -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 /* 允许内容区域选择 */

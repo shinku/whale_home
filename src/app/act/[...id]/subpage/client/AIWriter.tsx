@@ -1,10 +1,11 @@
 'use client'
 
 import { HistoryOutlined } from '@ant-design/icons'
-import { Button, message, Modal } from 'antd'
+import { Button, Modal } from 'antd'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { GenerateIcon } from './components/GeneratingIcon'
+import { TopButton } from './components/TopButton'
 /**
  * 记叙文、说明文、议论文、抒情文、描写文、应用文、游记、日记、读后感、观后感
  */
@@ -72,6 +73,7 @@ export default function AIWriter() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>()
   const t = translations['zh']
   const onSubmit = async (data: FormData) => {
+    mainWrap.current?.scrollIntoView({behavior: 'smooth'})
     if(isGenerating){
       return;
     }
@@ -94,6 +96,9 @@ export default function AIWriter() {
         const newHistory = [{form, data: response.data}, ...history].slice(0, 10)
         setHistory(newHistory as never)
         localStorage.setItem('aiWriterHistory', JSON.stringify(newHistory))
+        setTimeout(()=>{
+          resWrap.current?.scrollIntoView({behavior:"smooth"})
+        },0)
       }
     } finally {
       setIsGenerating(false)
@@ -102,13 +107,18 @@ export default function AIWriter() {
   const copyResult = useCallback(() => {
     if (!result) return;
     navigator.clipboard.writeText(result);
-    message.success({
-      content:t.copy_done
-    })
+    // message.success({
+    //  content:t.copy_done
+    // })
+    alert(t.copy_done)
   }, [result,t]);
   const resWrap = useRef<HTMLDivElement>(null)
+  const mainWrap = useRef<HTMLDivElement>(null)
+  const clickTop = useCallback(()=>{
+    mainWrap.current?.scrollIntoView({behavior: 'smooth'})
+  },[])
   return (
-    <div className="ai-writer-container" >
+    <div className="ai-writer-container" ref={mainWrap}>
       <div style={{ display: 'flex', justifyContent:'end', marginBottom: '10px' }}>
               <div onClick={() => setIsHistoryModalOpen(true)} style={{
                 background:"white !important",
@@ -138,11 +148,11 @@ export default function AIWriter() {
           <div className="form-group">
             <label>{t.extra}</label>
             <textarea
-              maxLength={200}
+              maxLength={500}
               style={{
                 width:"100%",
                 color:"gray",
-                height:"200px"
+                height:"120px"
               }}
               disabled={isGenerating}
               {...register('extra')}
@@ -253,8 +263,8 @@ export default function AIWriter() {
               } 
             </Button>
             <Button 
-               disabled={isGenerating}
-              onClick={copyResult} 
+              disabled={isGenerating}
+              onClick={handleSubmit(onSubmit)} 
               className='!bg-[#D9D9D9]'
               style={{
                   background:"#D9D9D9 !important",
@@ -267,7 +277,7 @@ export default function AIWriter() {
               }
             </Button>
           </div>
-          
+          <TopButton onClick={clickTop}/>
         </div>
       )}
 
