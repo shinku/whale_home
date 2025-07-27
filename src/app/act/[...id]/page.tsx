@@ -6,8 +6,8 @@ type PageProps = {
   params: Promise<{id:string[]}>
 }
 
-export async function generateMetadata({ params }: { params: { id: string[] } }): Promise<Metadata> {
-  const actId = params.id[0]
+export async function generateMetadata({ params }: PageProps ): Promise<Metadata> {
+  const actId = (await params).id[0]
   return {
     title: actId === 'math' ? '智能口算练习' : 'AI写作'
   }
