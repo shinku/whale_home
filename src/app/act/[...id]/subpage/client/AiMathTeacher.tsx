@@ -1,8 +1,9 @@
 'use client'
 import { CheckCircleFilled } from '@ant-design/icons'
 import { Button, Input, message, Modal } from 'antd'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useContext, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { UserContext } from './components/Common'
 import { GenerateIcon } from './components/GeneratingIcon'
 
 const rangeOptions = ['20以内', '40以内', '100以内', '500以内', '1000以内', '自定义']
@@ -24,6 +25,7 @@ export default function AiMathTeacher() {
   const [result, setResult] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const resWrap = useRef<HTMLDivElement>(null)
+  const {openId} = useContext(UserContext)
   const onSubmit = async () => {
     if (selectedRangeIndex === -1 && !customRange) {
       alert('请选择数字范围')
@@ -39,6 +41,7 @@ export default function AiMathTeacher() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          "x-user-id": openId
         },
         body: JSON.stringify({
           range: selectedRangeIndex === -1 ? `${customRange}以内` : rangeOptions[selectedRangeIndex],

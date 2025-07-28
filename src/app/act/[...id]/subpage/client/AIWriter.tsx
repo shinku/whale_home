@@ -2,8 +2,9 @@
 
 import { HistoryOutlined } from '@ant-design/icons'
 import { Button, Modal } from 'antd'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { UserContext } from './components/Common'
 import { GenerateIcon } from './components/GeneratingIcon'
 import { TopButton } from './components/TopButton'
 /**
@@ -63,7 +64,7 @@ export default function AIWriter() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [history, setHistory] = useState<{form:never, data: string}[]>([])
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
-  
+  const {openId} = useContext(UserContext)
   useEffect(() => {
     const savedHistory = localStorage.getItem('aiWriterHistory')
     if (savedHistory) {
@@ -88,7 +89,10 @@ export default function AIWriter() {
       }
       const result = await fetch("/api/aiact/aiwriter",{
         method:"post",
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
+        headers: {
+          "x-user-id": openId
+        }
       })
       const response = await result.json();
       if(response.status === 200) {
@@ -107,9 +111,6 @@ export default function AIWriter() {
   const copyResult = useCallback(() => {
     if (!result) return;
     navigator.clipboard.writeText(result);
-    // message.success({
-    //  content:t.copy_done
-    // })
     alert(t.copy_done)
   }, [result,t]);
   const resWrap = useRef<HTMLDivElement>(null)
