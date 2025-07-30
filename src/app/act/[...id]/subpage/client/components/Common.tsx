@@ -18,25 +18,9 @@ export const Common = ({children}: PropsWithChildren)=>{
     }
   },[userInfo])
   useEffect(()=>{
-    const onMessage = (e:{data:{type:string,data:{openId:string}}})=>{
-      if (e.data.type === 'userInfo') {
-          // 处理用户信息
-          setUserInfo({
-            openId: e.data.data.openId
-          })
-        }
-    }
-    (window as unknown as  {
-      wx: {
-        miniProgram: {
-          postMessage: (option: {data:string})=>void
-        }
-      }
-    }).wx.miniProgram.postMessage({ data: 'webview_loaded' });
-    window.addEventListener('message',onMessage)
-    return ()=>{
-      window.removeEventListener('message',onMessage)
-    }
+    const params = new URLSearchParams(window.location.search)
+    const openId = params.get('openid') || ''
+    setUserInfo({openId})
   },[])
   return <div>
     <UserContext.Provider value={contextValue}></UserContext.Provider>
