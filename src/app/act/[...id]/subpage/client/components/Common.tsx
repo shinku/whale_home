@@ -19,11 +19,14 @@ export const Common = ({children}: PropsWithChildren)=>{
   },[userInfo])
   useEffect(()=>{
     const params = new URLSearchParams(window.location.search)
+
     const openId = params.get('openid') || ''
+    
     setUserInfo({openId})
   },[])
   return <div>
-    <UserContext.Provider value={contextValue}></UserContext.Provider>
-    {children}
+    <UserContext.Provider value={contextValue}>
+      {children}
+    </UserContext.Provider>
   </div>
 }

@@ -65,6 +65,9 @@ export default function AIWriter() {
   const [history, setHistory] = useState<{form:never, data: string}[]>([])
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const {openId} = useContext(UserContext)
+  console.log({
+    openId
+  })
   useEffect(() => {
     const savedHistory = localStorage.getItem('aiWriterHistory')
     if (savedHistory) {
