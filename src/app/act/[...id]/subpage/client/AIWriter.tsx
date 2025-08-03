@@ -1,12 +1,13 @@
 'use client'
 
-import { HistoryOutlined } from '@ant-design/icons'
+import { CopyOutlined, EditTwoTone, HistoryOutlined, TrademarkCircleOutlined } from '@ant-design/icons'
 import { Button, Modal } from 'antd'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UserContext } from './components/Common'
 import { GenerateIcon } from './components/GeneratingIcon'
 import { TopButton } from './components/TopButton'
+import { getDependence } from './helper/dependence'
 /**
  * 记叙文、说明文、议论文、抒情文、描写文、应用文、游记、日记、读后感、观后感
  */
@@ -16,7 +17,7 @@ const translations = {
     topic: '作文主题',
     topicPlaceholder: '请输入作文主题',
     extra: "写作要求",
-    extraPlaceholder: '补充说明',
+    extraPlaceholder: '补充说明”',
     type: '作文类型',
     typePlaceholder: '请选择作文类型',
     wordCount: '作文字数',
@@ -38,6 +39,7 @@ const translations = {
     copy:"复制结果",
     copy_done:"复制成功",
     re_submit:"重新生成",
+    'lan': '语言',
     required: (field: string) => `请输入${field}`
   }
 }
@@ -65,9 +67,7 @@ export default function AIWriter() {
   const [history, setHistory] = useState<{form:never, data: string}[]>([])
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const {openId} = useContext(UserContext)
-  console.log({
-    openId
-  })
+  const dep = getDependence()
   useEffect(() => {
     const savedHistory = localStorage.getItem('aiWriterHistory')
     if (savedHistory) {
@@ -77,7 +77,7 @@ export default function AIWriter() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>()
   const t = translations['zh']
   const onSubmit = async (data: FormData) => {
-    mainWrap.current?.scrollIntoView({behavior: 'smooth'})
+   
     if(isGenerating){
       return;
     }
@@ -105,7 +105,7 @@ export default function AIWriter() {
         localStorage.setItem('aiWriterHistory', JSON.stringify(newHistory))
         setTimeout(()=>{
           resWrap.current?.scrollIntoView({behavior:"smooth"})
-        },0)
+        },100)
       }
     } finally {
       setIsGenerating(false)
@@ -121,30 +121,42 @@ export default function AIWriter() {
   const clickTop = useCallback(()=>{
     mainWrap.current?.scrollIntoView({behavior: 'smooth'})
   },[])
+  const submitBtnRef = useRef<HTMLButtonElement>(null)
   return (
     <div className="ai-writer-container" ref={mainWrap}>
-      <div style={{ display: 'flex', justifyContent:'end', marginBottom: '10px' }}>
+      <style>
+        {
+          `
+          option {
+            text-align: right;
+            padding-right: 10px;
+          }
+          `
+        }
+      </style>
+      <div style={{ width: "100%", display: 'flex', justifyContent:'end', marginBottom: '10px' }}>
               <div onClick={() => setIsHistoryModalOpen(true)} style={{
                 background:"white !important",
                 cursor: 'pointer',
                 float:"right"
               }}>
-                历史 <HistoryOutlined/>
+                历史记录 <HistoryOutlined/>
               </div>
       </div>
-      <div className="form-section">
+      <div className="form-section" style={{ width: "100%",position:"relative"}}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
             <label>{t.topic}</label>
             <textarea
-              maxLength={50}
+              maxLength={30}
               style={{
                 width:"100%",
-                color:"gray"
+                color:"gray",
+                outline:"none",
               }}
               disabled={isGenerating}
               {...register('topic', { required: t.required(t.topic) })}
-              placeholder={t.topicPlaceholder}
+              placeholder={t.topicPlaceholder +" 比如：" + dep.theme}
             />
             {errors.topic && <span className="error">{errors.topic.message}</span>}
           </div>
@@ -156,17 +168,18 @@ export default function AIWriter() {
               style={{
                 width:"100%",
                 color:"gray",
-                height:"120px"
+                height:"120px",
+                outline:"none",
               }}
               disabled={isGenerating}
               {...register('extra')}
-              placeholder={t.extraPlaceholder}
+              placeholder={t.extraPlaceholder + " 比如"+ dep.extra}
             />
             {errors.topic && <span className="error">{errors.topic.message}</span>}
           </div>
 
-          <div className="form-group">
-            <label>{t.type}</label>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center' , justifyContent: 'space-between'}}>
+            <div style={{display: "flex", alignItems:'center', height:"100%",fontWeight:"bold"}}>{t.type}</div>
             <select
               disabled={isGenerating}
               {...register('type', { required: t.required(t.type) })}
@@ -187,8 +200,8 @@ export default function AIWriter() {
             {errors.type && <span className="error">{errors.type.message}</span>}
           </div>
 
-          <div className="form-group">
-            <label>{t.wordCount}</label>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+            <div style={{display: "flex", alignItems:'center', height:"100%",fontWeight:"bold"}}>{t.wordCount}</div>
             <select
               disabled={isGenerating}
               {...register('wordCount', { required: t.required(t.wordCount) })}
@@ -203,37 +216,43 @@ export default function AIWriter() {
             </select>
             {errors.wordCount && <span className="error">{errors.wordCount.message}</span>}
           </div>
-
-          <div className="language-switcher" style={{
-              display: "flex",
-              width:"100%",
-              marginBottom:"30px",
-              marginTop:"10px",
-              justifyContent:"space-around"
-            }}>
+          <div className='language-select form-group' style={{display:"flex", alignItems:"center", justifyContent:"space-between"}}>
+             <div className='' style={{display:'flex', alignItems:"center", fontWeight:"bold"}}>{t.lan}</div>
+            <select
+              disabled={isGenerating}
+              {...register('language', { required: t.required('语言') })}
+              defaultValue={language}
+              onChange={(e) => setLanguage(e.target.value as 'zh' | 'en')}
+            >
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </select>
+            {errors.language && <span className="error">{errors.language.message}</span>}
+          </div>
+          <div className="language-switcher" style={{width:"100%",position:"relative"}}>
               <button 
                 disabled={isGenerating}
-                className={language === 'zh' ? 'active' : ''}
-                {...register("language")}
+                ref={submitBtnRef}
                 onClick={() => {
                   setLanguage('zh')
                   handleSubmit(onSubmit)()
                 }}
                 type="button"
-              >
-                生成中文 <GenerateIcon generating={isGenerating} />
-              </button> 
-              <button
-                disabled={isGenerating}
-                className={language === 'en' ? 'active' : ''}
-                onClick={() => {
-                  setLanguage('en')
-                  handleSubmit(onSubmit)()
+                style={{
+                  display:"flex",
+                  justifyContent:"center",
+                  gap:"10px",
+                  width:"100% !important",
                 }}
-                type="button"
               >
-                生成英文 <GenerateIcon generating={isGenerating} />
-              </button>
+                <EditTwoTone/>
+                <span style={{
+                 color:"rgb(22, 119, 255)"
+                }}>生成作文</span>
+                {isGenerating?"......  ":""} 
+                <GenerateIcon generating={isGenerating} />
+              </button> 
+              
           </div>
         </form>
       </div>
@@ -246,12 +265,11 @@ export default function AIWriter() {
             alignItems:"center"
           }}>
             <h2>{t.result}</h2>
-            
           </div>
           <div className="essay-result">
             {result}
           </div>
-          <div className='result-icon flex w-[100%]] gap-[20px]'>
+          <div className='result-icon' style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:"30px"}}>
             <Button 
               onClick={copyResult} 
               disabled={isGenerating}
@@ -259,23 +277,33 @@ export default function AIWriter() {
               style={{
                   background:"#D9D9D9 !important",
                   cursor: 'pointer',
-                  width: "40%",
-                  color: "black"
+                  width: "30% !important",
+                  color: "black",
+                  borderRadius: "4px !important"
               }}>
+                <CopyOutlined/>
               {
                 t.copy
               } 
             </Button>
             <Button 
               disabled={isGenerating}
-              onClick={handleSubmit(onSubmit)} 
+              onClick={()=> {
+                clickTop();
+                setTimeout(()=>{
+                   submitBtnRef.current?.click();
+                },500)
+               
+              }} 
               className='!bg-[#D9D9D9]'
               style={{
                   background:"#D9D9D9 !important",
                   cursor: 'pointer',
-                  width: "40%",
-                  color: "black"
+                  width: "30% !important",
+                  color: "black",
+                  borderRadius: "2px !important"
               }}>
+               <TrademarkCircleOutlined />
               {
                  t.re_submit
               }

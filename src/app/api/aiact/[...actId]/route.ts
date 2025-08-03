@@ -5,7 +5,6 @@ export const POST = async (request:NextRequest, {params}: {params: Promise<{actI
   const {actId} = await params
   const body = await request.json();
   const userId = request.headers.get("x-user-id") 
-  console.log({userId})
   const url = getApiHost()
   const data = JSON.stringify({config: body, actId: actId[0]});
   const result = await fetch(url+"api/ai/activity",{
