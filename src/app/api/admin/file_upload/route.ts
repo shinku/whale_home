@@ -6,7 +6,7 @@ export const POST = async (request: Request) => {
   console.log(request.headers.get('content-type'));
   try{
     const formData = await request.formData();
-    console.log({url})
+
     const res = await fetch(url, {
       method: 'POST',
       body: formData

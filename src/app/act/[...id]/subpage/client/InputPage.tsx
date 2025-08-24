@@ -1,7 +1,8 @@
 'use client'
 import { doRequest } from '@/app/admin/utils/request';
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
+import { UserContext } from './components/Common';
 import { GenerateIcon } from './components/GeneratingIcon';
 
 export default function InputPage() {
@@ -9,6 +10,7 @@ export default function InputPage() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+    const {openId} = useContext(UserContext)
   const handleChooseFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -27,39 +29,45 @@ export default function InputPage() {
     };
     input.click();
   };
-
+  const doUpload = useCallback(async (fileName:string,formData:FormData) => {
+     const uploadRes = await doRequest('/api/admin/file_convert?type=pdf2doc_textin', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            contentType: 'multipart/form-data', 
+            "x-user-id": openId
+          }
+      })
+    
+    return {
+      name: fileName,
+      link: uploadRes.file
+    }
+  },[openId])
+  const jumpBakToMini = useCallback((list:{name:string,link:string}[]) => {
+     // @ts-ignore
+      window.wx.miniProgram.navigateTo({
+        url:"/pages/converResult/covert-result-page?list="+JSON.stringify(list)
+      });
+   },[])
   const handleUpload = useCallback(async () => {
     if(isGenerating) return;
     if (!formData) return;
     setIsGenerating(true);
     try{
-       const uploadRes = await doRequest('/api/admin/file_convert?type=pdf2doc_textin', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            "x-user-id": new URL(window.location.href).searchParams.get('userId') || ""
-          }
-      })
-      console.log(uploadRes)
-      // @ts-ignore
-      window.wx.miniProgram.postMessage({
-        data: {
-          type: 'file_upload',
-          fileUrl: uploadRes.data
-        }})
-      // @ts-ignore
-      window.wx.miniProgram.navigateBack()
-      /*window.wx.miniProgram.navigateTo({
-        url:"/pages/convert/convert?type=filelist"
-      });*/
-
+      const result = await doUpload(fileName||"",formData)
+      jumpBakToMini([result])
     } catch (error) { 
       console.error('上传失败:', error);
+      alert('上传失败，请重试');
+      alert((error as unknown as {message:string}).message);
     } finally {
       setIsGenerating(false);
       setFormData(null);
     }
-  },[formData,isGenerating]);
+  },[formData,isGenerating,fileName,doUpload,jumpBakToMini]);
+
+
 
   return (
     <div className="" style={{

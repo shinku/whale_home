@@ -19,7 +19,7 @@ export const Common = ({children}: PropsWithChildren)=>{
   },[userInfo])
   useEffect(()=>{
     const params = new URLSearchParams(window.location.search)
-    const openId = params.get('userId') || ''
+    const openId = params.get('userId') ||  params.get('openid') ||''
     
     if(!openId) {
       setUsedComp(<div>缺少用户信息，请从正确的入口进入</div>)

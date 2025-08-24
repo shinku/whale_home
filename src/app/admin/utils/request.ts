@@ -8,7 +8,8 @@ export const getDev = () => {
 
 export const doRequest = async (url: string, options: RequestInit = {}) => {
   const params = new URL(window.location.href).searchParams;
-  const userId = params.get('userId');
+  // 兼容 userId 和 openid 两种参数
+  const userId = params.get('userId') || params.get('openid');
   if(!userId ){
     throw new Error('Missing userId in URL parameters');
   }

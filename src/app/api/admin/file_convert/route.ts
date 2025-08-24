@@ -15,15 +15,21 @@ export const POST = async (request: Request) => {
   })
   try{
     const formData = await request.formData();
+    console.log({
+      formData,
+    })
+    console.log(request.headers.get('content-type'));
     const res = await fetch(url, {
       method: 'POST',
       body: formData,
       headers: {
-        ...headerObject,
+        //...headerObject,
+        //"content-type": "multipart/form-data",
         'x-user-id': request.headers.get('x-user-id') || "",
       }
     });
     if (!res.ok) {
+      console.error('File convert failed with status:', res.status);
       return new Response(JSON.stringify({ error: 'File convert failed' }), { status: res.status });
     } else {
       const data = await res.json();
