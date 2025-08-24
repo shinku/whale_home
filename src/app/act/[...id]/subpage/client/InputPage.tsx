@@ -5,6 +5,17 @@ import { useCallback, useContext, useState } from 'react';
 import { UserContext } from './components/Common';
 import { GenerateIcon } from './components/GeneratingIcon';
 
+// Add global wx type declaration
+declare global {
+  interface Window {
+    wx?: {
+      miniProgram: {
+        navigateTo: (options: { url: string }) => void;
+      };
+    };
+  }
+}
+
 export default function InputPage() {
   const [fileName, setFileName] = useState<string | null>(null);
   // const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -45,10 +56,10 @@ export default function InputPage() {
     }
   },[openId])
   const jumpBakToMini = useCallback((list:{name:string,link:string}[]) => {
-     // @ts-ignore
-      window.wx.miniProgram.navigateTo({
+   
+    window.wx?.miniProgram.navigateTo({
         url:"/pages/converResult/covert-result-page?list="+JSON.stringify(list)
-      });
+    });
    },[])
   const handleUpload = useCallback(async () => {
     if(isGenerating) return;
