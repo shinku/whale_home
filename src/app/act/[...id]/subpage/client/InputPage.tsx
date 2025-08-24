@@ -86,12 +86,18 @@ export default function InputPage() {
           borderRadius: '30px',
           width: '90%',
           margin:"50% auto",
-          backgroundColor: '#f0f0f0',
+          
           padding: '15px',
           textAlign: 'center',
-          fontSize:"16px"
+          fontSize:"16px",
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '10px',
         }}
       >
+        <Image src='/images/ui/uploadicon.svg' alt='上传图标' width={36} height={36} />
         上传本地文件
       </div>
 
@@ -114,7 +120,7 @@ export default function InputPage() {
             className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md"
             style={{
               marginTop: '20px',
-              background: 'hsla(120, 3%, 55%, 1.00)',
+              background: '#6ED8E6',
               borderRadius: '8px',
               padding: '10px 20px',
               color: 'white',

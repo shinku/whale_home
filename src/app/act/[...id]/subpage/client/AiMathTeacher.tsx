@@ -1,6 +1,7 @@
 'use client'
-import { CheckCircleFilled } from '@ant-design/icons'
-import { Button, Input, message, Modal } from 'antd'
+import { Theme } from '@/components/Theme'
+import { CheckCircleTwoTone } from '@ant-design/icons'
+import { Button, ConfigProvider, Input, message, Modal } from 'antd'
 import { useCallback, useContext, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UserContext } from './components/Common'
@@ -82,6 +83,11 @@ export default function AiMathTeacher() {
     alert("复制成功")
   }, [result]);
   return (
+    <ConfigProvider theme={{
+      token: {
+        colorPrimary: '#6ED8E6',
+      },
+    }}>
     <div className="ai-math-teacher">
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* 数字范围选择 */}
@@ -128,7 +134,7 @@ export default function AiMathTeacher() {
                 key={value}
                 type={selectedArithmetic.includes(value) ? 'primary' : 'default'}
                 shape="round"
-                style={{ borderRadius: '12px', fontSize:'16px', fontWeight: "bold" }}
+                style={{ borderRadius: '12px', fontSize:'16px', fontWeight: "bold"}}
                 onClick={() => {
                   if (selectedArithmetic.includes(value)) {
                     setSelectedArithmetic(selectedArithmetic.filter(v => v !== value))
@@ -168,12 +174,14 @@ export default function AiMathTeacher() {
           onClick={handleSubmit(onSubmit)}
           disabled={isGenerating}
           style={{
-          width:"100%",
-          height:"50px",
-          fontWeight:'bolder',
-          fontSize: "16px",
-          background:"#D9D9D9",
-          color:"black"
+            width:"100%",
+            height:"50px",
+            fontWeight:'bolder',
+            fontSize: "16px",
+            color:"white",
+            border: "none",
+            background: Theme.mainTheme.color,
+            boxShadow: "none",
         }}>
           生成题目 <GenerateIcon generating={isGenerating}/>
         </Button>
@@ -190,7 +198,7 @@ export default function AiMathTeacher() {
                 margin: "12px",
                 borderBottom:"1px #D9D9D9 solid",
                 paddingBottom:"12px"
-              }}> <CheckCircleFilled color='green' style={{color:"green"}}/> 生成结果 </div>
+              }}> <CheckCircleTwoTone color={Theme.mainTheme.color} style={{color:Theme.mainTheme.color}}/> 生成结果 </div>
               <div style={{
                 width: "100%", 
                 wordWrap: "break-word",
@@ -210,8 +218,9 @@ export default function AiMathTeacher() {
                   height:"50px",
                   fontWeight:'bolder',
                   fontSize: "16px",
-                  background:"#D9D9D9",
-                  color:"black",
+                  background: Theme.mainTheme.color,
+                  color:"white",
+                  boxShadow: "none",
                   marginTop:"12px"
                 }}>
                 复制
@@ -263,5 +272,6 @@ export default function AiMathTeacher() {
         }
       `}</style>
     </div>
+    </ConfigProvider>
   )
 }

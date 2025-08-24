@@ -50,7 +50,6 @@ input, textarea {
   width: 40% !important;
   font-size: 20px;
   font-weight: bold;
-  background: #D9D9D9 !important;
   border-radius: 12px;
 }
 
@@ -65,7 +64,6 @@ input, textarea {
 .result-icon button {
   border-radius: 12px !important;
   padding: 4px 8px !important;
-  background: #D9D9D9 !important;
   border-radius: 12px;
   color: black;
 }
@@ -110,17 +108,15 @@ input, textarea {
 .ai-writer-container button {
   width: 100%;
   padding: 12px;
-  background: #4f46e5;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 16px;
   cursor: pointer;
   margin-top: 16px;
 }
 
 .ai-writer-container button:disabled {
-  background: #ccc;
   cursor: not-allowed;
 }
 

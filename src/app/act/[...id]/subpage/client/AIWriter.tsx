@@ -1,6 +1,7 @@
 'use client'
 
-import { CopyOutlined, EditTwoTone, HistoryOutlined, TrademarkCircleOutlined } from '@ant-design/icons'
+import { Theme } from '@/components/Theme'
+import { CopyOutlined, EditFilled, HistoryOutlined, TrademarkCircleOutlined } from '@ant-design/icons'
 import { Button, Modal } from 'antd'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -243,13 +244,14 @@ export default function AIWriter() {
                   justifyContent:"center",
                   gap:"10px",
                   width:"100% !important",
+                  background: "white !important",
                 }}
               >
-                <EditTwoTone/>
+                <EditFilled style={{color: Theme.mainTheme.color }} color={Theme.mainTheme.color}/>
                 <span style={{
-                 color:"rgb(22, 119, 255)"
-                }}>生成作文</span>
-                {isGenerating?"......  ":""} 
+                 color: Theme.mainTheme.color,
+                }}>生成作文{isGenerating?" ......  ":""} </span>
+                
                 <GenerateIcon generating={isGenerating} />
               </button> 
               
@@ -275,11 +277,12 @@ export default function AIWriter() {
               disabled={isGenerating}
               className='!bg-[#D9D9D9]'
               style={{
-                  background:"#D9D9D9 !important",
+                 
                   cursor: 'pointer',
                   width: "30% !important",
-                  color: "black",
-                  borderRadius: "4px !important"
+                  borderRadius: "4px !important",
+                  color: Theme.mainTheme.color,
+                  background: "white !important"
               }}>
                 <CopyOutlined/>
               {
@@ -297,11 +300,12 @@ export default function AIWriter() {
               }} 
               className='!bg-[#D9D9D9]'
               style={{
-                  background:"#D9D9D9 !important",
+                  
                   cursor: 'pointer',
                   width: "30% !important",
-                  color: "black",
-                  borderRadius: "2px !important"
+                  borderRadius: "2px !important",
+                  background: "white !important",
+                  color: Theme.mainTheme.color
               }}>
                <TrademarkCircleOutlined />
               {
