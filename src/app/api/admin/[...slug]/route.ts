@@ -41,7 +41,8 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
   // const header = request.headers.
   const userId = request.headers.get("x-user-id")
   console.log({
-    userId
+    userId,
+    distnay
   })
   switch (request.method) {
     case 'GET':
