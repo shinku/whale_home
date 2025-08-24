@@ -40,6 +40,9 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
   // const headerObject = Object.fromEntries(request.headers.entries());
   // const header = request.headers.
   const userId = request.headers.get("x-user-id")
+  console.log({
+    userId
+  })
   switch (request.method) {
     case 'GET':
       return fetch(distnay, {
@@ -66,7 +69,7 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
       return fetch(distnay, {
         method: request.method,
         headers: {
-          ...headerObject,
+          'x-user-id': userId || "",
           'Content-Type': 'application/json',
           'Authorization': request.headers.get('Authorization') || ''
         },
