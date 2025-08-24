@@ -38,6 +38,7 @@ export default function BannerPage() {
   })
 
   useEffect(() => {
+    console.log("start in banner")
     fetchBanners()
   }, [])
 
