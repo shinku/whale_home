@@ -102,6 +102,7 @@ export default function AiMathTeacher() {
                 key={option}
                 type={selectedRangeIndex === index ? 'primary' : 'default'}
                 shape="round"
+                disabled={isGenerating}
                 style={{
                   width:"100%",
                   height:"100px",
@@ -131,6 +132,7 @@ export default function AiMathTeacher() {
           <div className="arithmetic-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {arithmeticOptions.map(({ label, value }) => (
               <Button
+                 disabled={isGenerating}
                 key={value}
                 type={selectedArithmetic.includes(value) ? 'primary' : 'default'}
                 shape="round"
@@ -155,6 +157,7 @@ export default function AiMathTeacher() {
           <div className="count-buttons">
             {countOptions.map(count => (
               <Button
+               disabled={isGenerating}
                 key={count}
                 type={selectedCount === count ? 'primary' : 'default'}
                 shape="round"
