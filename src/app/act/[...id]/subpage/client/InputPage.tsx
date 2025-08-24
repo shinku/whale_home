@@ -97,7 +97,7 @@ export default function InputPage() {
           gap: '10px',
         }}
       >
-        <Image src='/images/ui/uploadicon.svg' alt='上传图标' width={36} height={36} />
+        <Image src='/images/ui/uploadicon.svg' alt='上传图标' width={50} height={50} />
         上传本地文件
       </div>
 
