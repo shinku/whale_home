@@ -7,7 +7,7 @@ import { GenerateIcon } from './components/GeneratingIcon';
 
 export default function InputPage() {
   const [fileName, setFileName] = useState<string | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  // const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
     const {openId} = useContext(UserContext)
@@ -21,7 +21,7 @@ export default function InputPage() {
         setFileName(file.name);
         // Here you would typically upload the file to a server
         // For demonstration, we just set a dummy URL
-        setFileUrl(URL.createObjectURL(file));
+        // setFileUrl(URL.createObjectURL(file));
         const data = new FormData();
         data.append('file', file);
         setFormData(data);
