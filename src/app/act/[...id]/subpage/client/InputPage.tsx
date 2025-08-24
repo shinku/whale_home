@@ -1,5 +1,5 @@
 'use client'
-import { doRequest } from '@/app/admin/utils/request';
+import { doRequest } from '@/app/ddadmin/utils/request';
 import Image from 'next/image';
 import { useCallback, useContext, useState } from 'react';
 import { UserContext } from './components/Common';

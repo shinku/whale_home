@@ -38,10 +38,6 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
     }
   }
   const headerObject = Object.fromEntries(request.headers.entries());
-  console.log(111111);
-  console.log({
-    headerObject
-  })
   // const header = request.headers.
   switch (request.method) {
     case 'GET':

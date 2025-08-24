@@ -6,7 +6,7 @@ import { useCallback, useEffect } from "react";
 const menusOptions:{"name":string, id?:string,path:string}[] = [
   {
     name: "BANNER MANAGEMENT",
-    path: "/admin/banner",
+    path: "/ddadmin/banner",
   },
 
 ]
