@@ -2,7 +2,6 @@ import { getApiHost } from "@/utils";
 
 export const POST = async (request: Request) => { 
   let url = getApiHost()+"api/file/upload/convert_file";
-  const headerObject = Object.fromEntries(request.headers.entries());
   const querys = new URL(request.url).searchParams;
   if (querys) {
     const type = querys.get('type');
@@ -10,15 +9,8 @@ export const POST = async (request: Request) => {
       url += `?type=${type}`;
     }
   }
-  console.log({
-    url
-  })
   try{
     const formData = await request.formData();
-    console.log({
-      formData,
-    })
-    console.log(request.headers.get('content-type'));
     const res = await fetch(url, {
       method: 'POST',
       body: formData,
