@@ -20,6 +20,7 @@ export default function ActLayout({
 }: {
   children: React.ReactNode
 }) {
+  
   return (
     <html lang="zh-CN" className={inter.className}>
       <body className="mobile-container">

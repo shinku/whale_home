@@ -19,14 +19,36 @@ export const Common = ({children}: PropsWithChildren)=>{
   },[userInfo])
   useEffect(()=>{
     const params = new URLSearchParams(window.location.search)
-
-    const openId = params.get('openid') || ''
+    const openId = params.get('userId') || ''
     
+    if(!openId) {
+      setUsedComp(<div>缺少用户信息，请从正确的入口进入</div>)
+      alert('缺少openid参数');
+      return;
+    }
     setUserInfo({openId})
   },[])
+  useEffect(()=>{
+    if(!userInfo.openId) return;
+    console.log("userInfo", userInfo)
+    // /api/aiact/aiwriter
+    fetch("/api/user/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-id": userInfo.openId
+      },
+    }).then(res=>res.json()).then(data=>{
+      if(!data.openid) {
+        alert('用户信息获取失败，请检查链接是否正确');
+        setUsedComp(<div>用户信息获取失败，请检查链接是否正确</div>)  
+      } 
+    })
+  },[userInfo])
+  const [usedComp, setUsedComp] = useState(children)
   return <div>
     <UserContext.Provider value={contextValue}>
-      {children}
+      <div>{usedComp}</div> 
     </UserContext.Provider>
   </div>
 }

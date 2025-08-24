@@ -37,12 +37,18 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
       distnay += `?${queryString}`;
     }
   }
-  console.log(request.method);
+  const headerObject = Object.fromEntries(request.headers.entries());
+  console.log(111111);
+  console.log({
+    headerObject
+  })
+  // const header = request.headers.
   switch (request.method) {
     case 'GET':
       return fetch(distnay, {
         method: 'GET',
         headers: {
+          ...headerObject,
           'Content-Type': 'application/json',
           'Authorization': request.headers.get('Authorization') || ''
         }
@@ -59,13 +65,11 @@ async function handleRequest(request:NextRequest,{params}:TRouteContext) {
     case "PUT":
     case "DELETE":
       // 处理 POST、PUT、DELETE 请求{
-      const data = await request.json();
-      console.log({
-        data
-      })
+      const data = (await request.json()) || {};
       return fetch(distnay, {
         method: request.method,
         headers: {
+          ...headerObject,
           'Content-Type': 'application/json',
           'Authorization': request.headers.get('Authorization') || ''
         },

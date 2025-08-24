@@ -3,6 +3,7 @@ import Script from 'next/script';
 import AiMathTeacher from "./subpage/client/AiMathTeacher";
 import AIWriter from "./subpage/client/AIWriter";
 import { Common } from './subpage/client/components/Common';
+import InputPage from './subpage/client/InputPage';
 
 type PageProps = {
   params: Promise<{id:string[]}>
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: PageProps ): Promise<Metadata
 
 const actMap:{[key:string]: React.FC} = {
   "aiwriter":()=><AIWriter/>,
-  "math":()=><AiMathTeacher/>
+  "math":()=><AiMathTeacher/>,
+  'inputer':()=><InputPage/> // 默认页面
 }
 
 export default async function Page({ params }: PageProps) {

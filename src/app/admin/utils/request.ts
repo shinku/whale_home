@@ -7,12 +7,16 @@ export const getDev = () => {
 }
 
 export const doRequest = async (url: string, options: RequestInit = {}) => {
-
-  
+  const params = new URL(window.location.href).searchParams;
+  const userId = params.get('userId');
+  if(!userId ){
+    throw new Error('Missing userId in URL parameters');
+  }
   const response = await fetch(`${url}`, {
     ...options,
     headers: {
       ...options.headers,
+      "x-user-id": userId,
     },
   });
 
