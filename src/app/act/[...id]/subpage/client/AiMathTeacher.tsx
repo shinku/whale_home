@@ -96,7 +96,7 @@ export default function AiMathTeacher() {
         name:"小学数学题.docx",
         link:data.data
       }]);
-    }).catch((e)=>{
+    }).catch(()=>{
       message.error("下载失败")
     })  
   }, [result,openId]);
