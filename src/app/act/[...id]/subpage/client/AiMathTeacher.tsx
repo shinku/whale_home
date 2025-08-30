@@ -1,4 +1,5 @@
 'use client'
+import { doRequest } from '@/app/ddadmin/utils/request'
 import { Theme } from '@/components/Theme'
 import { CheckCircleTwoTone } from '@ant-design/icons'
 import { Button, ConfigProvider, Input, message, Modal } from 'antd'
@@ -6,6 +7,7 @@ import { useCallback, useContext, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UserContext } from './components/Common'
 import { GenerateIcon } from './components/GeneratingIcon'
+import { jumpBakToMini } from './wx'
 
 const rangeOptions = ['20以内', '40以内', '100以内', '500以内', '1000以内', '自定义']
 const countOptions = [20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -53,7 +55,7 @@ export default function AiMathTeacher() {
       const { data } = await response.json()
       message.success(`成功生成${selectedCount}道题目`)
       console.log('生成的题目数据:', data) // 处理返回数据
-      setResult(data.split("\n").map((str:string,index:number)=>`(${index})  ${str}\n`))
+      setResult(data.split("\n").map((str:string,index:number)=>`(${index+1})  ${str}\n`))
       setTimeout(()=>{
         resWrap.current?.scrollIntoView({
           behavior:"smooth"
@@ -76,12 +78,28 @@ export default function AiMathTeacher() {
   },[customRange])
   const copyResult = useCallback(() => {
     if (!result) return;
-    navigator.clipboard.writeText(result);
+    //navigator.clipboard.writeText(result);
     // message.success({
     //  content:t.copy_done
     // })
-    alert("复制成功")
-  }, [result]);
+    //alert("复制成功")
+    doRequest("/api/admin/doc",{
+      method:"POST",
+      body:JSON.stringify({
+        text:result
+      }),
+      headers:{
+        "x-user-id": openId
+      }   
+    }).then((data)=>{
+      jumpBakToMini([{
+        name:"小学数学题.docx",
+        link:data.data
+      }]);
+    }).catch((e)=>{
+      message.error("下载失败")
+    })  
+  }, [result,openId]);
   return (
     <ConfigProvider theme={{
       token: {
@@ -92,7 +110,7 @@ export default function AiMathTeacher() {
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* 数字范围选择 */}
         <div className="section">
-          <h3>数字范围</h3>
+          <h3>运算范围</h3>
           <div className="range-buttons" style={{
             display:"grid",
             gridTemplateColumns:"1fr 1fr 1fr"
@@ -104,8 +122,8 @@ export default function AiMathTeacher() {
                 shape="round"
                 disabled={isGenerating}
                 style={{
-                  width:"100%",
-                  height:"100px",
+                  // width:"30%",
+                  height:"60px",
                   borderRadius:"12px",
                   fontSize:"16px",
                   fontWeight:'bold'
@@ -226,7 +244,7 @@ export default function AiMathTeacher() {
                   boxShadow: "none",
                   marginTop:"12px"
                 }}>
-                复制
+                下载为word
                 </Button>
       }
      

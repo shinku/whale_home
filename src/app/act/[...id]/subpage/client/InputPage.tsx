@@ -4,17 +4,9 @@ import Image from 'next/image';
 import { useCallback, useContext, useState } from 'react';
 import { UserContext } from './components/Common';
 import { GenerateIcon } from './components/GeneratingIcon';
+import { jumpBakToMini } from './wx';
 
-// Add global wx type declaration
-declare global {
-  interface Window {
-    wx?: {
-      miniProgram: {
-        navigateTo: (options: { url: string }) => void;
-      };
-    };
-  }
-}
+
 
 export default function InputPage() {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -55,12 +47,6 @@ export default function InputPage() {
       link: uploadRes.file
     }
   },[openId])
-  const jumpBakToMini = useCallback((list:{name:string,link:string}[]) => {
-   
-    window.wx?.miniProgram.navigateTo({
-        url:"/pages/converResult/covert-result-page?list="+JSON.stringify(list)
-    });
-   },[])
   const handleUpload = useCallback(async () => {
     if(isGenerating) return;
     if (!formData) return;
@@ -76,7 +62,7 @@ export default function InputPage() {
       setIsGenerating(false);
       setFormData(null);
     }
-  },[formData,isGenerating,fileName,doUpload,jumpBakToMini]);
+  },[formData,isGenerating,fileName,doUpload]);
 
 
 
