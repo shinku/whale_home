@@ -226,7 +226,7 @@ export default function AIWriter() {
               onChange={(e) => setLanguage(e.target.value as 'zh' | 'en')}
             >
               <option value="zh">中文</option>
-              <option value="en">English</option>
+              <option value="en">英文</option>
             </select>
             {errors.language && <span className="error">{errors.language.message}</span>}
           </div>

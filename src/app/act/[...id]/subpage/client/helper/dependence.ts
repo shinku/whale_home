@@ -154,21 +154,7 @@ const dep =[
     "extra": "分析带手机的利弊：查资料方便vs.沉迷游戏。可结合学校管理措施（如统一保管），提出你的合理建议。",
     "grade": "middle"
   },
-  {
-    "theme": "我读《西游记》",
-    "extra": "选择最喜爱的角色（如孙悟空），分析其性格特点，联系现实讨论“取经精神”对青少年的启示。",
-    "grade": "middle"
-  },
-  {
-    "theme": "短视频之我见",
-    "extra": "探讨短视频的影响：快速获取知识vs.碎片化阅读。建议如何筛选优质内容，避免沉迷。",
-    "grade": "middle"
-  },
-  {
-    "theme": "运动会的意义",
-    "extra": "超越比赛输赢，写团体接力中的合作、长跑最后的坚持，反思体育精神对人格的塑造作用。",
-    "grade": "middle"
-  },
+
   {
     "theme": "家乡的变迁",
     "extra": "对比记忆中的老街与新城区，从建筑、生活方式变化切入，思考发展如何兼顾传统保护。",
@@ -179,11 +165,7 @@ const dep =[
     "extra": "以书信形式写下当前的目标与困惑，想象未来可能的生活状态，鼓励自己保持初心与勇气。",
     "grade": "middle"
   },
-  {
-    "theme": "AI助手利与弊",
-    "extra": "讨论作业辅导AI的争议：提高效率vs.依赖思维退化。建议如何将其作为工具而非答案来源。",
-    "grade": "middle"
-  },
+
   {
     "theme": "餐桌上的对话",
     "extra": "通过记录一次家庭晚餐的谈话（如父母回忆童年），展现代际差异与亲情的温暖传递。",
@@ -452,5 +434,5 @@ const dep =[
 ]
 
 export const getDependence = () => {
-  return dep[Math.floor(Math.random() * dep.length)];
+  return dep[Math.floor(Math.random() * dep.filter(item=>item.grade!=='high').length)];
 }
