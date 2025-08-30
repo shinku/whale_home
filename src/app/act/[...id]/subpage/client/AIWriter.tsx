@@ -69,6 +69,7 @@ export default function AIWriter() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const {openId} = useContext(UserContext)
   const dep = getDependence()
+  // message.info("正在生成中，请稍等 ......")
   useEffect(() => {
     const savedHistory = localStorage.getItem('aiWriterHistory')
     if (savedHistory) {
@@ -112,11 +113,14 @@ export default function AIWriter() {
       setIsGenerating(false)
     }
   }
+  const [openSuccess, setOpenSuccess] = useState(false);
   const copyResult = useCallback(() => {
     if (!result) return;
     navigator.clipboard.writeText(result);
-    alert(t.copy_done)
-  }, [result,t]);
+    // alert(t.copy_done)
+    setOpenSuccess(true)
+  }, [result]);
+  
   const resWrap = useRef<HTMLDivElement>(null)
   const mainWrap = useRef<HTMLDivElement>(null)
   const clickTop = useCallback(()=>{
@@ -173,7 +177,7 @@ export default function AIWriter() {
                 outline:"none",
               }}
               disabled={isGenerating}
-              {...register('extra')}
+              {...register('extra',{ required: t.required(t.topic) })}
               placeholder={t.extraPlaceholder + " 比如"+ dep.extra}
             />
             {errors.topic && <span className="error">{errors.topic.message}</span>}
@@ -230,11 +234,12 @@ export default function AIWriter() {
             </select>
             {errors.language && <span className="error">{errors.language.message}</span>}
           </div>
-          <div className="language-switcher" style={{width:"100%",position:"relative"}}>
+          <div style={{width:"100%",position:"relative"  }}>
               <button 
                 disabled={isGenerating}
                 ref={submitBtnRef}
                 onClick={() => {
+                  
                   setLanguage('zh')
                   handleSubmit(onSubmit)()
                 }}
@@ -244,12 +249,12 @@ export default function AIWriter() {
                   justifyContent:"center",
                   gap:"10px",
                   width:"100% !important",
-                  background: "white !important",
+                  background: "#cccccc",
+                  borderRadius: '16px'
                 }}
               >
-                <EditFilled style={{color: Theme.mainTheme.color }} color={Theme.mainTheme.color}/>
+                <EditFilled color={Theme.mainTheme.color}/>
                 <span style={{
-                 color: Theme.mainTheme.color,
                 }}>生成作文{isGenerating?" ......  ":""} </span>
                 
                 <GenerateIcon generating={isGenerating} />
@@ -280,9 +285,8 @@ export default function AIWriter() {
                  
                   cursor: 'pointer',
                   width: "30% !important",
-                  borderRadius: "4px !important",
-                  color: Theme.mainTheme.color,
-                  background: "white !important"
+                   background: "#cccccc",
+                  borderRadius: '16px'
               }}>
                 <CopyOutlined/>
               {
@@ -303,9 +307,8 @@ export default function AIWriter() {
                   
                   cursor: 'pointer',
                   width: "30% !important",
-                  borderRadius: "2px !important",
-                  background: "white !important",
-                  color: Theme.mainTheme.color
+                  background: "#cccccc",
+                  borderRadius: '16px'
               }}>
                <TrademarkCircleOutlined />
               {
@@ -346,6 +349,7 @@ export default function AIWriter() {
           )}
         </div>
       </Modal>
+      <Modal open={openSuccess} onCancel={()=>setOpenSuccess(false)} onOk={()=>setOpenSuccess(false)}>{t.copy_done}</Modal>
     </div>
   )
 }

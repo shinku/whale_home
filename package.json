@@ -14,8 +14,8 @@
     "@ant-design/icons": "^6.0.0",
     "antd": "^5.26.6",
     "next": "15.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
     "react-hook-form": "^7.60.0"
   },
   "devDependencies": {
