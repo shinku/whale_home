@@ -90,7 +90,8 @@ export default function AIWriter() {
           type: data.type,
           theme: data.topic,
           count: data.wordCount,
-          language: language
+          language: language,
+          extra: data.extra
       }
       const result = await fetch("/api/aiact/aiwriter",{
         method:"post",
