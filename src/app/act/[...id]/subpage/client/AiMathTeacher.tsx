@@ -83,6 +83,7 @@ export default function AiMathTeacher() {
     //  content:t.copy_done
     // })
     //alert("复制成功")
+    setIsGenerating(true)
     doRequest("/api/admin/doc",{
       method:"POST",
       body:JSON.stringify({
@@ -208,7 +209,7 @@ export default function AiMathTeacher() {
         </Button>
       </form>
       {
-        result &&  <div className='section result' ref={resWrap} style={{
+        result.length>0 &&  <div className='section result' ref={resWrap} style={{
           borderRadius:"12px",
           border:"1px #D9D9D9 solid",
           marginTop:"12px",
@@ -232,7 +233,7 @@ export default function AiMathTeacher() {
         </div>
       }
       {
-        result && <Button type="primary" htmlType="submit"
+        result.length>0 && <Button type="primary" htmlType="submit"
                 onClick={copyResult}
                 disabled={isGenerating}
                 style={{
