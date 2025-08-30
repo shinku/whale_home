@@ -25,7 +25,7 @@ export default function AiMathTeacher() {
   const [selectedArithmetic, setSelectedArithmetic] = useState<string[]>(arithmeticOptions.map(item=>item.value))
   const [selectedCount, setSelectedCount] = useState(20)
   const { handleSubmit } = useForm()
-  const [result, setResult] = useState("")
+  const [result, setResult] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const resWrap = useRef<HTMLDivElement>(null)
   const {openId} = useContext(UserContext)
@@ -86,14 +86,14 @@ export default function AiMathTeacher() {
     doRequest("/api/admin/doc",{
       method:"POST",
       body:JSON.stringify({
-        text:result
+        text:result.join("\n"),
       }),
       headers:{
         "x-user-id": openId
       }   
     }).then((data)=>{
       jumpBakToMini([{
-        name:"小学数学题.docx",
+        name:"数学题.docx",
         link:data.data
       }]);
     }).catch(()=>{
