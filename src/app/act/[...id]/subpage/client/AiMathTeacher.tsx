@@ -246,7 +246,7 @@ export default function AiMathTeacher() {
                   marginTop:"12px"
                 }}>
                 下载为word
-                <GenerateIcon generating={isGenerating}/>
+                { isGenerating && <GenerateIcon generating={isGenerating}/>}
                 </Button>
       }
      
