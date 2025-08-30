@@ -8,8 +8,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'fms.whalepea.com',
-        // 可选：限制特定路径
-        // pathname: '/upload/**',
       },
       // 可以添加更多允许的域名
       {
