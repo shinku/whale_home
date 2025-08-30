@@ -234,6 +234,7 @@ export default function AiMathTeacher() {
       {
         result && <Button type="primary" htmlType="submit"
                 onClick={copyResult}
+                disabled={isGenerating}
                 style={{
                   width:"100%",
                   height:"50px",
@@ -245,6 +246,7 @@ export default function AiMathTeacher() {
                   marginTop:"12px"
                 }}>
                 下载为word
+                <GenerateIcon generating={isGenerating}/>
                 </Button>
       }
      
