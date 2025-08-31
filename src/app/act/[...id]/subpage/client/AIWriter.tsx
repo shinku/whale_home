@@ -140,11 +140,9 @@ export default function AIWriter() {
           `
         }
       </style>
-      <div style={{ width: "100%", display: 'flex', justifyContent:'end', marginBottom: '10px' }}>
+      <div style={{ width: "100%", display: 'flex', justifyContent:'end', marginBottom: '10px', fontWeight: Theme.mainTheme.fontWeight }}>
               <div onClick={() => setIsHistoryModalOpen(true)} style={{
-                background:"white !important",
-                cursor: 'pointer',
-                float:"right"
+                color: Theme.mainTheme.color,
               }}>
                 历史记录 <HistoryOutlined/>
               </div>
@@ -250,8 +248,9 @@ export default function AIWriter() {
                   justifyContent:"center",
                   gap:"10px",
                   width:"100% !important",
-                  background: "#cccccc",
-                  borderRadius: '16px'
+                  background: Theme.mainTheme.color,
+                  borderRadius: '16px',
+                  fontWeight: Theme.mainTheme.fontWeight
                 }}
               >
                 <EditFilled color={Theme.mainTheme.color}/>
@@ -283,11 +282,11 @@ export default function AIWriter() {
               disabled={isGenerating}
               className='!bg-[#D9D9D9]'
               style={{
-                 
                   cursor: 'pointer',
                   width: "30% !important",
                    background: "#cccccc",
-                  borderRadius: '16px'
+                  borderRadius: '16px',
+                  backgroundColor: Theme.mainTheme.color,
               }}>
                 <CopyOutlined/>
               {
@@ -305,11 +304,11 @@ export default function AIWriter() {
               }} 
               className='!bg-[#D9D9D9]'
               style={{
-                  
                   cursor: 'pointer',
                   width: "30% !important",
                   background: "#cccccc",
-                  borderRadius: '16px'
+                  borderRadius: '16px',
+                  backgroundColor: Theme.mainTheme.color,
               }}>
                <TrademarkCircleOutlined />
               {
