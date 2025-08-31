@@ -249,7 +249,7 @@ export default function AiMathTeacher() {
                   boxShadow: "none",
                   marginTop:"12px"
                 }}>
-                下载为word
+                下载文件
                 { isGenerating && <GenerateIcon generating={isGenerating}/>}
                 </Button>
       }
