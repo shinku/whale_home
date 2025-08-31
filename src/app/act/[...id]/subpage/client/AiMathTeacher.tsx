@@ -93,13 +93,16 @@ export default function AiMathTeacher() {
         "x-user-id": openId
       }   
     }).then((data)=>{
+      setIsGenerating(false)
       jumpBakToMini([{
         name:"数学题.docx",
         link:data.data
       }]);
     }).catch(()=>{
       message.error("下载失败")
-    })  
+    }).finally(()=>{
+      setIsGenerating(false)
+    } )
   }, [result,openId]);
   return (
     <ConfigProvider theme={{
