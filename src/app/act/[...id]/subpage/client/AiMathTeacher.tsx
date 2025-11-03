@@ -116,8 +116,7 @@ export default function AiMathTeacher() {
         <div className="section">
           <h3>运算范围</h3>
           <div className="range-buttons" style={{
-            display:"grid",
-            gridTemplateColumns:"1fr 1fr 1fr"
+            display:"flex",
           }}>
             {rangeOptions.map((option,index) => (
               <Button
@@ -126,7 +125,7 @@ export default function AiMathTeacher() {
                 shape="round"
                 disabled={isGenerating}
                 style={{
-                  // width:"30%",
+                  width:"30%",
                   height:"60px",
                   borderRadius:"12px",
                   fontSize:"16px",
@@ -156,9 +155,10 @@ export default function AiMathTeacher() {
               <Button
                  disabled={isGenerating}
                 key={value}
+
                 type={selectedArithmetic.includes(value) ? 'primary' : 'default'}
                 shape="round"
-                style={{ borderRadius: '12px', fontSize:'16px', fontWeight: "bold"}}
+                style={{ borderRadius: '12px', fontSize:'16px', fontWeight: "bold",width: "20%"}}
                 onClick={() => {
                   if (selectedArithmetic.includes(value)) {
                     setSelectedArithmetic(selectedArithmetic.filter(v => v !== value))
