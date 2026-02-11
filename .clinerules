@@ -1,0 +1,32 @@
+## 增加了两个接口：
+1： /admin/summary/users
+
+get请求，入参只有offset和page。offset从0开始
+数据sample：
+{
+	"status": 200,
+	"data": {
+		"count": 1,
+		"rows": [
+			{
+				"openid": "ogWqv7bk5oeWO7c0thPq5UofgB8E",
+				"user_name": "小欣",
+				"createdAt": "2025-05-18T08:50:47.000Z"
+			}
+		]
+	}
+}
+2： /admin/summary/users_record
+get请求，入参只有offset和page。offset从0开始
+数据格式如：{
+	"status": 200,
+	"data": [
+		{
+			"record_count": 11,
+			"openid": "ogWqv7bk5oeWO7c0thPq5UofgB8E",
+			"u_name": "小欣",
+			"last_used": "2025-08-24T10:02:02.000Z",
+			"first_used": "2025-08-03T14:22:39.000Z"
+		}
+	]
+}
