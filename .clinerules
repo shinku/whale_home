@@ -1,6 +1,5 @@
 ## 增加了两个接口：
-1： /admin/summary/users
-
+1： /api/admin/summary/users
 get请求，入参只有offset和page。offset从0开始
 数据sample：
 {
@@ -16,7 +15,7 @@ get请求，入参只有offset和page。offset从0开始
 		]
 	}
 }
-2： /admin/summary/users_record
+2： /api/admin/summary/users_record
 get请求，入参只有offset和page。offset从0开始
 数据格式如：{
 	"status": 200,
@@ -30,3 +29,5 @@ get请求，入参只有offset和page。offset从0开始
 		}
 	]
 }
+通过api/admin已经实现了转发
+只需根据以上两个接口，在ddamdin下新增一个users页面，展示用户列表和用户使用记录。就用以上两个接口分别开发两个组件，一个是用户列表组件，一个是用户使用记录组件。用户列表组件展示用户的openid、用户名和创建时间，用户使用记录组件展示用户的openid、用户名、使用记录数量、第一次使用时间和最后一次使用时间。
