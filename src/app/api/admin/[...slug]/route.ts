@@ -35,8 +35,9 @@ async function handleRequest(request: NextRequest, { params }: TRouteContext) {
       distnay += `?${queryString}`;
     }
   }
-  // const headerObject = Object.fromEntries(request.headers.entries());
-  // const header = request.headers.
+  console.log({
+    distnay
+  })
   const userId = request.headers.get("x-user-id");
   switch (request.method) {
     case "GET":

@@ -1,48 +1,59 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import {
+  PictureOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
+import { Menu as AntdMenu, type MenuProps } from "antd";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 
-const menusOptions: { name: string; id?: string; path: string }[] = [
+const menusOptions: {
+  name: string;
+  path: string;
+  icon: React.ReactNode;
+}[] = [
   {
     name: "BANNER MANAGEMENT",
     path: "/ddadmin/banner",
+    icon: <PictureOutlined />,
   },
   {
     name: "USERS MANAGEMENT",
     path: "/ddadmin/users",
+    icon: <TeamOutlined />,
+  },
+  {
+    name: "HEHE'S LISENCE",
+    path: "/ddadmin/lisence",
+    icon: <SafetyCertificateOutlined />,
   },
 ];
+
+const items: MenuProps["items"] = menusOptions.map((menu) => ({
+  key: menu.path,
+  icon: menu.icon,
+  label: <Link href={menu.path}>{menu.name}</Link>,
+}));
+
 export const Menu = () => {
-  const router = useRouter();
   const pathname = usePathname();
-  useEffect(() => {
-    console.log({ pathname });
+
+  const selectedKeys = useMemo(() => {
+    const current = menusOptions.find(
+      (menu) => pathname === menu.path || pathname.startsWith(`${menu.path}/`),
+    );
+    return current ? [current.path] : [];
   }, [pathname]);
-  const clickNav = useCallback(
-    (index: number) => {
-      const option = menusOptions[index];
-      if (option && option.path) {
-        router.push(option.path);
-      }
-    },
-    [router],
-  );
+
   return (
-    <div className="menu p-4 font-bold">
-      <ul>
-        {menusOptions.map((menu, index: number) => (
-          <li key={menu.id || menu.name}>
-            <a
-              href={menu.path}
-              onClick={() => clickNav(index)}
-              className={`text-underline hover:text-blue-500 ${pathname === menu.path ? "text-blue-500" : ""}`}
-            >
-              {menu.name}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <AntdMenu
+      mode="inline"
+      items={items}
+      selectedKeys={selectedKeys}
+      style={{ borderInlineEnd: "none" }}
+    />
   );
 };

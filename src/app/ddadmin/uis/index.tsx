@@ -1,12 +1,28 @@
-import { PropsWithChildren } from "react"
+"use client";
 
-export const Mbutton = ({onClick, children,type = 'normal',className = ""}:{onClick:()=>void} & PropsWithChildren & {type?: "normal" | "text", className?:string})=>{
-  return <div 
-        onClick={onClick}
-        className={`cursor-pointer mb-4 p-2 ${type === "normal"?"bg-blue-500":"bg-transparent"} text-white rounded ${className} flex justify-center items-center`}
-      >
-        {
-          children
-        }
-  </div>
-}
+import { Button } from "antd";
+import { PropsWithChildren } from "react";
+
+export const Mbutton = ({
+  onClick,
+  children,
+  type = "normal",
+  className = "",
+  htmlType = "button",
+}: {
+  onClick: () => void;
+  type?: "normal" | "text";
+  className?: string;
+  htmlType?: "button" | "submit";
+} & PropsWithChildren) => {
+  return (
+    <Button
+      type={type === "normal" ? "primary" : "text"}
+      htmlType={htmlType}
+      onClick={onClick}
+      className={className}
+    >
+      {children}
+    </Button>
+  );
+};
