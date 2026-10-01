@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { ENTRY_FROM_PROJECT } from "@/utils/eduNews";
 import { isMiniProgram, miniProgramNavigateBack } from "@/utils/wx";
+import { Button } from "antd";
+import { Fragment } from "react/jsx-runtime";
 
 /**
  * 详情页返回按钮，两种入口：
@@ -32,12 +34,17 @@ export const BackButton = ({ entryFrom }: { entryFrom?: string }) => {
   };
 
   return (
-    <button
-      type="button"
-      className="inline-flex items-center px-3.5 py-1.5 mb-4 border border-gray-300 rounded-2xl bg-white text-gray-700 text-[13px] cursor-pointer"
-      onClick={handleBack}
-    >
-      ← 返回
-    </button>
+    <Fragment>
+      {
+        !isMiniProgram() && <Button
+            type="link"
+            className="inline-flex items-center px-3.5 py-1.5 mb-4 border border-gray-300 rounded-2xl bg-white text-gray-700 text-[13px] cursor-pointer"
+            onClick={handleBack}
+          >
+            ← 返回
+        </Button>
+      }
+    </Fragment>
+
   );
 };
