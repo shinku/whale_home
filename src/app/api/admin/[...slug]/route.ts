@@ -1,7 +1,5 @@
-// app/api/users/[id]/route.js
-
-import { getApiHost } from "@/utils";
 import { NextRequest, NextResponse } from "next/server";
+import { proxyToApi } from "@/utils/proxy";
 
 type TRouteContext = {
   params: Promise<{
@@ -9,94 +7,32 @@ type TRouteContext = {
   }>;
 };
 
-// app/api/users/route.js
+// 管理端代理路由：/api/admin/xxxx -> getApiHost() + "admin/xxxx"
+// 与通用代理共用 src/utils/proxy.ts（请求头白名单、body 透传、错误兜底）。
+const ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE"];
 
-export async function GET(request: NextRequest, option: TRouteContext) {
-  return handleRequest(request, option);
+export async function GET(request: NextRequest, context: TRouteContext) {
+  return handleRequest(request, context);
 }
-export async function POST(request: NextRequest, { params }: TRouteContext) {
-  return handleRequest(request, { params });
+export async function POST(request: NextRequest, context: TRouteContext) {
+  return handleRequest(request, context);
 }
-export async function PUT(request: NextRequest, { params }: TRouteContext) {
-  return handleRequest(request, { params });
+export async function PUT(request: NextRequest, context: TRouteContext) {
+  return handleRequest(request, context);
 }
-export async function DELETE(request: NextRequest, { params }: TRouteContext) {
-  return handleRequest(request, { params });
+export async function DELETE(request: NextRequest, context: TRouteContext) {
+  return handleRequest(request, context);
 }
 
-async function handleRequest(request: NextRequest, { params }: TRouteContext) {
+export async function handleRequest(
+  request: NextRequest,
+  { params }: TRouteContext,
+) {
   const { slug } = await params;
-  //
-  let distnay = getApiHost() + "admin/" + slug.join("/");
-  const querys = request.nextUrl.searchParams;
-  if (querys) {
-    const queryString = querys.toString();
-    if (queryString) {
-      distnay += `?${queryString}`;
-    }
-  }
-  console.log({
-    distnay
-  })
-  const userId = request.headers.get("x-user-id");
-  switch (request.method) {
-    case "GET":
-      return fetch(distnay, {
-        method: "GET",
-        headers: {
-          "x-user-id": userId || "",
-          "Content-Type": "application/json",
-          Authorization: request.headers.get("Authorization") || "",
-        },
-      })
-        .then((res) => {
-          if (!res.ok) {
-            return NextResponse.json(
-              { error: "Failed to fetch data" },
-              { status: res.status },
-            );
-          }
-          return res.json().then((data) => NextResponse.json(data));
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-          return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 },
-          );
-        });
-    case "POST":
-    case "PUT":
-    case "DELETE":
-      // 处理 POST、PUT、DELETE 请求{
-      const data = (await request.json()) || {};
-      return fetch(distnay, {
-        method: request.method,
-        headers: {
-          "x-user-id": userId || "",
-          "Content-Type": "application/json",
-          Authorization: request.headers.get("Authorization") || "",
-        },
-        body: JSON.stringify(data),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            return NextResponse.json(
-              { error: "Failed to create data" },
-              { status: res.status },
-            );
-          }
-          return res.json().then((data) => NextResponse.json(data));
-        })
-        .catch((error) => {
-          console.error("Error creating data:", error);
-          return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 },
-          );
-        });
 
-    default:
-      return new NextResponse(null, { status: 405 });
+  if (!ALLOWED_METHODS.includes(request.method)) {
+    return new NextResponse(null, { status: 405 });
   }
+
+  return proxyToApi(request, { path: `admin/${slug.join("/")}` });
 }

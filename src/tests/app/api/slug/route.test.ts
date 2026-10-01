@@ -1,51 +1,22 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { handleRequest } from "@/app/api/[...slug]/route";
 import { lisencedPaths } from "@/app/api/[...slug]/lisence";
-
-// getApiHost 已在 src/tests/setup.ts 里被固定替换（见 jest.config.js 的 setupFiles）
-const HOST = "https://api.example.test/";
-
-// 保存原始 fetch，测试结束后还原（Jest 没有 stubGlobal，手动替换全局即可）
-const originalFetch = globalThis.fetch;
-
-type NextRequestInit = ConstructorParameters<typeof NextRequest>[1];
-type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
-
-/** 构造一个真实的 NextRequest（只用到 nextUrl / method / headers / arrayBuffer） */
-function makeRequest(path: string, init?: NextRequestInit) {
-  return new NextRequest(new URL(path, "http://localhost"), init);
-}
-
-/** route handler 的第二个参数：{ params: Promise<{ slug: string[] }> } */
-function contextFor(...segments: string[]) {
-  return { params: Promise.resolve({ slug: segments }) };
-}
-
-/** 把全局 fetch 替换成始终返回给定 Response 的 mock */
-function stubFetch(response: Response) {
-  const fetchMock = jest.fn<FetchFn>().mockResolvedValue(response);
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
-/** 把全局 fetch 替换成必定失败的 mock */
-function stubFetchReject(error: Error) {
-  const fetchMock = jest.fn<FetchFn>().mockRejectedValue(error);
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
+import {
+  HOST,
+  contextFor,
+  jsonResponse,
+  makeRequest,
+  restoreFetch,
+  stubFetch,
+  stubFetchReject,
+  utilsMock,
+  withLocalUpstream,
+} from "@/tests/helpers/proxy";
 
 afterEach(() => {
-  globalThis.fetch = originalFetch;
+  restoreFetch();
   jest.restoreAllMocks();
 });
 
@@ -142,9 +113,33 @@ describe("handleRequest - 目标地址拼接", () => {
   it("没有 query string 时不追加 '?'", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
 
-    await handleRequest(makeRequest("/api/edu/news"), contextFor("edu", "news"));
+    await handleRequest(
+      makeRequest("/api/edu/news"),
+      contextFor("edu", "news"),
+    );
 
     expect(fetchMock.mock.calls[0][0]).not.toContain("?");
+  });
+
+  it("上游 host 固定用 getApiHost('production')", async () => {
+    stubFetch(jsonResponse({ ok: true }));
+    const originalGetApiHost = utilsMock.getApiHost;
+    const envs: (string | undefined)[] = [];
+    utilsMock.getApiHost = (env) => {
+      envs.push(env);
+      return originalGetApiHost(env);
+    };
+
+    try {
+      await handleRequest(
+        makeRequest("/api/edu/news"),
+        contextFor("edu", "news"),
+      );
+    } finally {
+      utilsMock.getApiHost = originalGetApiHost;
+    }
+
+    expect(envs).toEqual(["production"]);
   });
 });
 
@@ -152,7 +147,10 @@ describe("handleRequest - 请求转发", () => {
   it("转发 method，并对 GET/HEAD 不发送 body", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
 
-    await handleRequest(makeRequest("/api/edu/news"), contextFor("edu", "news"));
+    await handleRequest(
+      makeRequest("/api/edu/news"),
+      contextFor("edu", "news"),
+    );
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "GET" });
     expect(fetchMock.mock.calls[0][1]?.body).toBeUndefined();
   });
@@ -195,6 +193,99 @@ describe("handleRequest - 请求转发", () => {
     const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
     expect(forwarded.has("host")).toBe(false);
     expect(forwarded.has("content-length")).toBe(false);
+  });
+});
+
+describe("handleRequest - 请求头白名单（参考 admin 的做法）", () => {
+  // 线上报错：TypeError: fetch failed / InvalidArgumentError: invalid connection header
+  // 原因：nginx 用 proxy_set_header Connection 'upgrade' 注入连接头，
+  // 老写法把客户端请求头原样透传给 undici，undici 只接受 'close' / 'keep-alive'。
+  // 现在只转发白名单里的头（见 src/utils/proxy.ts），其余一律丢弃。
+  const HOP_BY_HOP = [
+    "connection",
+    "keep-alive",
+    "proxy-connection",
+    "transfer-encoding",
+    "upgrade",
+    "te",
+    "trailer",
+    "expect",
+  ];
+
+  it.each(HOP_BY_HOP)("逐跳头 %s 不会被转发", async (name) => {
+    const fetchMock = stubFetch(jsonResponse({ ok: true }));
+
+    const request = makeRequest("/api/edu/news", {
+      headers: {
+        [name]: "upgrade",
+        "x-user-id": "user-123",
+      },
+    });
+
+    await handleRequest(request, contextFor("edu", "news"));
+
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(forwarded.has(name)).toBe(false);
+    expect(forwarded.get("x-user-id")).toBe("user-123");
+  });
+
+  it("白名单外的自定义头不会被转发（避免误带上 cookie / sec-* 等）", async () => {
+    const fetchMock = stubFetch(jsonResponse({ ok: true }));
+
+    const request = makeRequest("/api/edu/news", {
+      headers: {
+        cookie: "session=secret",
+        "x-custom": "keep-me",
+        "sec-fetch-mode": "cors",
+        "x-user-id": "user-123",
+      },
+    });
+
+    await handleRequest(request, contextFor("edu", "news"));
+
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(forwarded.has("cookie")).toBe(false);
+    expect(forwarded.has("x-custom")).toBe(false);
+    expect(forwarded.has("sec-fetch-mode")).toBe(false);
+    expect(forwarded.get("x-user-id")).toBe("user-123");
+  });
+
+  it("真实转发：带 Upgrade / Keep-Alive 的请求不会被 undici 拒绝", async () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await withLocalUpstream(async ({ seen }) => {
+      const request = makeRequest("/api/edu/news?limit=10", {
+        headers: {
+          connection: "upgrade",
+          upgrade: "websocket",
+          "keep-alive": "timeout=5",
+        },
+      });
+
+      const res = await handleRequest(request, contextFor("edu", "news"));
+
+      expect(res.status).toBe(200);
+      const upstreamHeaders = seen();
+      expect(upstreamHeaders.upgrade).toBeUndefined();
+      expect(upstreamHeaders["keep-alive"]).toBeUndefined();
+      expect(upstreamHeaders.connection).not.toBe("upgrade");
+    });
+  });
+
+  it("真实转发：Connection 为空值（nginx proxy_set_header Connection ''）也不会 500", async () => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await withLocalUpstream(async ({ seen }) => {
+      const request = makeRequest("/api/edu/news", {
+        headers: { connection: "" },
+      });
+
+      const res = await handleRequest(request, contextFor("edu", "news"));
+
+      expect(res.status).toBe(200);
+      expect(seen().connection).not.toBe("");
+    });
   });
 });
 
