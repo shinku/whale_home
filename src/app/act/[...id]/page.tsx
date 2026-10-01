@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import { WxScript } from "@/components/WxScript";
 import AiMathTeacher from "./subpage/client/AiMathTeacher";
 import AIWriter from "./subpage/client/AIWriter";
 import { Common } from "./subpage/client/components/Common";
@@ -38,10 +38,7 @@ export default async function Page({ params }: PageProps) {
   const Comp = actMap[actId] as React.FC;
   return (
     <>
-      <Script
-        src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"
-        strategy="beforeInteractive"
-      />
+      <WxScript />
       <div
         style={{
           maxWidth: "768px",
