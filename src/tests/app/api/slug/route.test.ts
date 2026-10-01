@@ -121,7 +121,7 @@ describe("handleRequest - 目标地址拼接", () => {
     expect(fetchMock.mock.calls[0][0]).not.toContain("?");
   });
 
-  it("上游 host 固定用 getApiHost('production')", async () => {
+  it("上游 host 用默认的 getApiHost()（与 admin 一致，按 NODE_ENV 走）", async () => {
     stubFetch(jsonResponse({ ok: true }));
     const originalGetApiHost = utilsMock.getApiHost;
     const envs: (string | undefined)[] = [];
@@ -139,7 +139,7 @@ describe("handleRequest - 目标地址拼接", () => {
       utilsMock.getApiHost = originalGetApiHost;
     }
 
-    expect(envs).toEqual(["production"]);
+    expect(envs).toEqual([undefined]);
   });
 });
 
@@ -155,7 +155,7 @@ describe("handleRequest - 请求转发", () => {
     expect(fetchMock.mock.calls[0][1]?.body).toBeUndefined();
   });
 
-  it("转发 POST 的 body 与自定义 header", async () => {
+  it("转发 POST 的 body 与 content-type", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
     const payload = JSON.stringify({ hello: "world" });
 
@@ -175,8 +175,8 @@ describe("handleRequest - 请求转发", () => {
     expect(new TextDecoder().decode(init.body as ArrayBuffer)).toBe(payload);
 
     const forwarded = init.headers as Headers;
-    expect(forwarded.get("x-user-id")).toBe("user-123");
     expect(forwarded.get("content-type")).toBe("application/json");
+    expect(forwarded.has("x-user-id")).toBe(false);
   });
 
   it("剔除会干扰上游的 host 与 content-length 头", async () => {
@@ -201,6 +201,7 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
   // 原因：nginx 用 proxy_set_header Connection 'upgrade' 注入连接头，
   // 老写法把客户端请求头原样透传给 undici，undici 只接受 'close' / 'keep-alive'。
   // 现在只转发白名单里的头（见 src/utils/proxy.ts），其余一律丢弃。
+  // 公共接口不带认证信息：Authorization / x-user-id 都不转发。
   const HOP_BY_HOP = [
     "connection",
     "keep-alive",
@@ -218,7 +219,7 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
     const request = makeRequest("/api/edu/news", {
       headers: {
         [name]: "upgrade",
-        "x-user-id": "user-123",
+        "content-type": "application/json",
       },
     });
 
@@ -226,7 +227,26 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
 
     const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
     expect(forwarded.has(name)).toBe(false);
-    expect(forwarded.get("x-user-id")).toBe("user-123");
+    expect(forwarded.get("content-type")).toBe("application/json");
+  });
+
+  it("不转发认证信息（Authorization / x-user-id）", async () => {
+    const fetchMock = stubFetch(jsonResponse({ ok: true }));
+
+    const request = makeRequest("/api/edu/news", {
+      headers: {
+        Authorization: "Bearer token",
+        "x-user-id": "user-123",
+        "content-type": "application/json",
+      },
+    });
+
+    await handleRequest(request, contextFor("edu", "news"));
+
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(forwarded.has("authorization")).toBe(false);
+    expect(forwarded.has("x-user-id")).toBe(false);
+    expect(forwarded.get("content-type")).toBe("application/json");
   });
 
   it("白名单外的自定义头不会被转发（避免误带上 cookie / sec-* 等）", async () => {
@@ -237,7 +257,6 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
         cookie: "session=secret",
         "x-custom": "keep-me",
         "sec-fetch-mode": "cors",
-        "x-user-id": "user-123",
       },
     });
 
@@ -247,7 +266,6 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
     expect(forwarded.has("cookie")).toBe(false);
     expect(forwarded.has("x-custom")).toBe(false);
     expect(forwarded.has("sec-fetch-mode")).toBe(false);
-    expect(forwarded.get("x-user-id")).toBe("user-123");
   });
 
   it("真实转发：带 Upgrade / Keep-Alive 的请求不会被 undici 拒绝", async () => {

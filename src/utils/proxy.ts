@@ -5,6 +5,9 @@ import { getApiHost } from "@/utils";
 /**
  * 允许转发给上游的请求头白名单（大小写不敏感）。
  *
+ * 公共接口不需要认证信息，所以这里不含 Authorization / x-user-id：
+ * 需要带认证的具名路由（如 src/app/api/admin/[...slug]/route.ts）自己拼头。
+ *
  * 这里用「白名单」而不是「黑名单」：客户端和 nginx 会带一堆与本请求无关的头
  * （Connection / Upgrade / Keep-Alive / Host / Cookie / sec-* 等），
  * 透传给 Node 的 fetch（undici）会直接抛错，例如
@@ -12,13 +15,7 @@ import { getApiHost } from "@/utils";
  * `proxy_set_header Connection 'upgrade'` 就会触发），最终表现为线上 500。
  * 需要新增可透传的头时，在这里加一项并补测试。
  */
-export const FORWARDABLE_REQUEST_HEADERS = [
-  "accept",
-  "accept-language",
-  "authorization",
-  "content-type",
-  "x-user-id",
-] as const;
+export const FORWARDABLE_REQUEST_HEADERS = ["content-type"] as const;
 
 /** 上游不带 body 的状态码，直接构造空响应，避免 Response 构造抛错 */
 const BODY_LESS_STATUS = new Set([204, 205, 304]);
@@ -104,7 +101,10 @@ export const proxyToApi = async (
   try {
     const response = await fetch(destination, {
       method: request.method,
-      headers: pickForwardHeaders(request, extraHeaders),
+      headers: {
+         'Content-Type': 'application/json',
+          'x-user-id': request.headers.get('x-user-id') || "",
+      },
       body,
       redirect: "manual",
       cache: "no-store",

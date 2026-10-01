@@ -6,7 +6,8 @@ import { lisencedPaths } from "./lisence";
 // 例如：当前页面请求 /api/edu/news -> getApiHost() + "api/edu/news"
 // 注意：/api/admin、/api/user、/api/aiact 等已存在的具名路由优先级更高，
 // 会先被各自的路由处理，不会走到这里。
-// 请求头由 src/utils/proxy.ts 用白名单筛选后转发，不直接透传客户端的头。
+// 请求头只转发白名单里的 content-type（见 src/utils/proxy.ts），
+// 其余一律丢弃，尤其不带 Authorization / x-user-id 这类认证信息。
 
 type TRouteContext = {
   params: Promise<{
@@ -48,6 +49,6 @@ export async function handleRequest(
 
   // 上游路径统一走 "api/" 前缀（getApiHost() 自带结尾斜杠）
   return proxyToApi(request, {
-    path: `api/${slug.join("/")}`
+    path: `api/${slug.join("/")}`,
   });
 }
