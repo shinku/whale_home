@@ -74,7 +74,7 @@ export const pickForwardHeaders = (
  */
 export const proxyToApi = async (
   request: NextRequest,
-  { path, hostEnv, search, headers: extraHeaders }: TProxyOptions,
+  { path, hostEnv, search }: TProxyOptions,
 ): Promise<NextResponse> => {
   const destination = buildUpstreamUrl(
     path,

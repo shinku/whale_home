@@ -174,12 +174,13 @@ describe("handleRequest - 请求转发", () => {
     expect(init.method).toBe("POST");
     expect(new TextDecoder().decode(init.body as ArrayBuffer)).toBe(payload);
 
-    const forwarded = init.headers as Headers;
-    expect(forwarded.get("content-type")).toBe("application/json");
-    expect(forwarded.has("x-user-id")).toBe(false);
+    // proxyToApi 现在按 admin 的做法自己拼头：Content-Type + x-user-id
+    const forwarded = init.headers as Record<string, string>;
+    expect(forwarded["Content-Type"]).toBe("application/json");
+    expect(forwarded["x-user-id"]).toBe("user-123");
   });
 
-  it("剔除会干扰上游的 host 与 content-length 头", async () => {
+  it("不会把 host / content-length 透传给上游", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
 
     await handleRequest(
@@ -190,18 +191,21 @@ describe("handleRequest - 请求转发", () => {
       contextFor("edu", "news"),
     );
 
-    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
-    expect(forwarded.has("host")).toBe(false);
-    expect(forwarded.has("content-length")).toBe(false);
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Record<
+      string,
+      string
+    >;
+    expect(forwarded).not.toHaveProperty("host");
+    expect(forwarded).not.toHaveProperty("content-length");
   });
 });
 
-describe("handleRequest - 请求头白名单（参考 admin 的做法）", () => {
+describe("handleRequest - 只转发 admin 风格的固定头", () => {
   // 线上报错：TypeError: fetch failed / InvalidArgumentError: invalid connection header
   // 原因：nginx 用 proxy_set_header Connection 'upgrade' 注入连接头，
   // 老写法把客户端请求头原样透传给 undici，undici 只接受 'close' / 'keep-alive'。
-  // 现在只转发白名单里的头（见 src/utils/proxy.ts），其余一律丢弃。
-  // 公共接口不带认证信息：Authorization / x-user-id 都不转发。
+  // 现在由 src/utils/proxy.ts 自己拼头（Content-Type + x-user-id），
+  // 客户端的其余头一律不透传。
   const HOP_BY_HOP = [
     "connection",
     "keep-alive",
@@ -225,12 +229,15 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
 
     await handleRequest(request, contextFor("edu", "news"));
 
-    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
-    expect(forwarded.has(name)).toBe(false);
-    expect(forwarded.get("content-type")).toBe("application/json");
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Record<
+      string,
+      string
+    >;
+    expect(forwarded).not.toHaveProperty(name);
+    expect(forwarded["Content-Type"]).toBe("application/json");
   });
 
-  it("不转发认证信息（Authorization / x-user-id）", async () => {
+  it("只带上 x-user-id，不转发 Authorization", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
 
     const request = makeRequest("/api/edu/news", {
@@ -243,13 +250,16 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
 
     await handleRequest(request, contextFor("edu", "news"));
 
-    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
-    expect(forwarded.has("authorization")).toBe(false);
-    expect(forwarded.has("x-user-id")).toBe(false);
-    expect(forwarded.get("content-type")).toBe("application/json");
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Record<
+      string,
+      string
+    >;
+    expect(forwarded["x-user-id"]).toBe("user-123");
+    expect(forwarded).not.toHaveProperty("authorization");
+    expect(forwarded).not.toHaveProperty("Authorization");
   });
 
-  it("白名单外的自定义头不会被转发（避免误带上 cookie / sec-* 等）", async () => {
+  it("客户端的其他头不会被转发（cookie / sec-* / 自定义头等）", async () => {
     const fetchMock = stubFetch(jsonResponse({ ok: true }));
 
     const request = makeRequest("/api/edu/news", {
@@ -262,10 +272,13 @@ describe("handleRequest - 请求头白名单（参考 admin 的做法）", () =>
 
     await handleRequest(request, contextFor("edu", "news"));
 
-    const forwarded = fetchMock.mock.calls[0][1]?.headers as Headers;
-    expect(forwarded.has("cookie")).toBe(false);
-    expect(forwarded.has("x-custom")).toBe(false);
-    expect(forwarded.has("sec-fetch-mode")).toBe(false);
+    const forwarded = fetchMock.mock.calls[0][1]?.headers as Record<
+      string,
+      string
+    >;
+    expect(forwarded).not.toHaveProperty("cookie");
+    expect(forwarded).not.toHaveProperty("x-custom");
+    expect(forwarded).not.toHaveProperty("sec-fetch-mode");
   });
 
   it("真实转发：带 Upgrade / Keep-Alive 的请求不会被 undici 拒绝", async () => {
