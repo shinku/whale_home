@@ -2,7 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 
-import { isMiniProgram, miniProgramNavigateTo } from "@/utils/wx";
+import {
+  isMiniProgram,
+  jumpBakToMini,
+  miniProgramNavigateTo,
+} from "@/utils/wx";
 import { cn } from "@/utils/cn";
 import {
   parseSubjectResult,
@@ -19,8 +23,12 @@ import {
   type TSubjectFragmentHandle,
 } from "./SubjectFragment";
 import { SubjectPaper } from "./SubjectPaper";
+import { captureToBase64Pages } from "./paperToPdf";
 
 type TStatus = "idle" | "loading" | "error";
+
+/** PDF 直链前缀：上游返回的是 OSS 对象名（pub/xxx.pdf），需要拼上域名 */
+const PDF_FILE_HOST = "https://fms.whalepea.com/";
 
 /**
  * 所有学科共用的「选选项 → AI 生成 → 展示结果」流程。
@@ -28,6 +36,7 @@ type TStatus = "idle" | "loading" | "error";
  */
 export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
   const fragmentRef = useRef<TSubjectFragmentHandle>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
   const [values, setValues] = useState(() => defaultOptions(subject));
   const [result, setResult] = useState<TSubjectResult | null>(null);
   const [fallbackText, setFallbackText] = useState("");
@@ -128,15 +137,63 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
     }
   };
 
+  /**
+   * 保存为 PDF：先把卷面 DOM 用 html2canvas 画成图片（按 A4 比例切页、
+   * 每页转成 base64），再交给 /api/convert 转发给上游拼成 PDF。
+   */
+  const savePdf = async () => {
+    const paper = paperRef.current;
+    if (!paper) return;
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const base64List = await captureToBase64Pages(paper);
+      if (base64List.length === 0) {
+        throw new Error("卷面导出失败，请重试");
+      }
+
+      const response = await fetch("/api/convert", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(userId ? { "x-user-id": userId } : {}),
+        },
+        body: JSON.stringify({ convertType: "base642pdf", base64List }),
+      });
+      const body = (await response.json()) as {
+        data?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !body?.data) {
+        throw new Error(body?.error || "PDF 生成失败，请稍后重试");
+      }
+
+      // 上游返回的是 OSS 对象名，拼成直链再打开
+      const link = PDF_FILE_HOST + body.data;
+      // 微信小程序 webview 里（wx.miniProgram 可用）交给小程序跳转下载；
+      // 普通 PC / 手机浏览器直接开新窗口预览
+      if (isMiniProgram()) {
+        jumpBakToMini([{ name: `${subject.title}.pdf`, link: body.data as string }]);
+      } else {
+        window.open(link, "_blank", "noopener,noreferrer");
+      }
+      setStatus("idle");
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error ? error.message : "PDF 生成失败，请稍后重试",
+      );
+    }
+  };
+
   /** 配置页（ConfigFragment 的内容） */
   const configPanel = (
     <div className="mx-auto w-full max-w-[794px] px-4 pt-6 pb-16">
       <header className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">{subject.title}</h1>
         <p className="mt-1 text-sm text-gray-500">{subject.desc}</p>
-        <p className="mt-1 text-xs text-gray-400">
-          系统提示词：src/prompts/{subject.slug}.md
-        </p>
       </header>
 
       <div className="mb-5 flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4">
@@ -180,7 +237,10 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
     <div className="mx-auto w-full max-w-[794px] px-4 pt-6">
       {result ? (
         <div className="flex flex-col gap-3">
-          <SubjectPaper subject={subject} result={result} />
+          {/* 用 ref 框住卷面，保存为 PDF 时截取这一块 */}
+          <div ref={paperRef}>
+            <SubjectPaper subject={subject} result={result} />
+          </div>
 
           {/* 不需要导出的学科（例如成语填空的即时填字）这里就不渲染按钮 */}
           {showExport ? (
@@ -188,11 +248,11 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
               <div className="flex gap-3 print:hidden">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={savePdf}
                   disabled={status === "loading"}
                   className="h-12 flex-1 rounded-xl bg-blue-600 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  保存为 PDF
+                  {status === "loading" ? "生成中..." : "保存为 PDF"}
                 </button>
                 <button
                   type="button"
@@ -204,9 +264,16 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
                 </button>
               </div>
 
-              <p className="text-center text-xs text-gray-400 print:hidden">
-                保存为 PDF 会调用浏览器打印，选择「另存为 PDF」即可
-              </p>
+              {message ? (
+                <p
+                  className={cn(
+                    "text-center text-sm print:hidden",
+                    status === "error" ? "text-red-500" : "text-gray-500",
+                  )}
+                >
+                  {message}
+                </p>
+              ) : null}
             </>
           ) : null}
         </div>

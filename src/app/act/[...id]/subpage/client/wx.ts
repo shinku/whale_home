@@ -1,7 +1,2 @@
-import { miniProgramNavigateTo } from "@/utils/wx";
-
-export const jumpBakToMini = (list: { name: string; link: string }[]) => {
-  miniProgramNavigateTo(
-    "/pages/converResult/covert-result-page?list=" + JSON.stringify(list),
-  );
-};
+// 实现已挪到公共的 @/utils/wx，这里保留导出，避免改动 act 模块里的引用。
+export { jumpBakToMini } from "@/utils/wx";

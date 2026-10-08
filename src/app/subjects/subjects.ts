@@ -274,6 +274,9 @@ export const SUBJECTS: TSubject[] = [
     desc: "按学段生成英译中 / 中译英 / 拼写练习",
     emoji: "W",
     resultTitle: "单词练习",
+    // 与成语填空一致：即时答题游戏，不需要卷头（二维码/品牌/姓名栏）与导出按钮
+    showPaperHeader: false,
+    showExport: false,
     options: [
       {
         key: "年级",

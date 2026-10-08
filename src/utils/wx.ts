@@ -27,6 +27,17 @@ export const miniProgramNavigateTo = (url: string) => {
   window.wx?.miniProgram?.navigateTo({ url });
 };
 
+/**
+ * 把生成好的文件交给小程序处理（下载 / 预览）：
+ * 跳到小程序的结果页，`list` 每项是 `{ name, link }`。
+ * 只有在小程序 webview 里（`wx.miniProgram` 可用）才有效。
+ */
+export const jumpBakToMini = (list: { name: string; link: string }[]) => {
+  miniProgramNavigateTo(
+    "/pages/converResult/covert-result-page?list=" + JSON.stringify(list),
+  );
+};
+
 /** 返回小程序上一页 */
 export const miniProgramNavigateBack = (delta = 1) => {
   window.wx?.miniProgram?.navigateBack({ delta });

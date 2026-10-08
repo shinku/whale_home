@@ -1,5 +1,7 @@
+import { cn } from "@/utils/cn";
+
 import { itemText, type TSubjectItem } from "../../result";
-import { itemKey } from "./shared";
+import { EXERCISE_FONT, itemKey } from "./shared";
 
 /** 数学公式：默写卷只给名称留白，背诵卷给名称 + 公式 + 说明 */
 export const FormulaPaper = ({
@@ -19,7 +21,7 @@ export const FormulaPaper = ({
           <div className="text-[14px] font-semibold">
             {index + 1}. {itemText(item, "name")}
           </div>
-          <div className="mt-0.5 font-serif text-[16px]">
+          <div className={cn("mt-0.5 text-[16px]", EXERCISE_FONT)}>
             {itemText(item, "expr")}
           </div>
           {itemText(item, "note") ? (

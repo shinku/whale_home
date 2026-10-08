@@ -22,6 +22,13 @@ const eslintConfig = [
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    // 测试相关文件放行：jest 配置与测试用例里允许使用 CommonJS 的 require
+    files: ["jest.config.js", "src/tests/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // 关闭与 Prettier 冲突的格式化规则，格式化交给 Prettier 处理
   prettierConfig,
 ];

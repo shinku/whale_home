@@ -24,6 +24,10 @@ type TSubjectAiResponse = {
  * - config 由服务端 JSON.stringify 后作为用户消息，prompt 作为 System Prompt；
  * - 成功返回 `{ status: 200, data: "模型返回的纯文本" }`，
  *   失败时 HTTP 500 而 body.status 是 404，所以 HTTP 与 body.status 都要判断。
+ *
+ * config 里额外带一个每次都不同的 `随机种子`：模型没有跨请求记忆，
+ * 同一套选项反复生成时靠它当随机源，避免每次都出同一批题
+ * （对应各 prompt 里的「随机种子与多样性」小节）。
  */
 export async function POST(request: NextRequest, { params }: TRouteContext) {
   const { subject: slug } = await params;
@@ -41,13 +45,20 @@ export async function POST(request: NextRequest, { params }: TRouteContext) {
   const userId = request.headers.get("x-user-id");
   if (userId) headers.set("x-user-id", userId);
 
+  // 毫秒时间戳 + 随机串，保证每次调用的种子都不同
+  const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
   try {
     const response = await fetch(getApiHost() + "api/ai/subjects", {
       method: "POST",
       headers,
       cache: "no-store",
       body: JSON.stringify({
-        config: { subject: subject.slug, ...(payload.options ?? {}) },
+        config: {
+          subject: subject.slug,
+          ...(payload.options ?? {}),
+          随机种子: seed,
+        },
         prompt: loadSubjectPrompt(subject.slug),
       }),
     });

@@ -122,6 +122,20 @@ describe("POST /api/subjects/[subject]", () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
   });
+
+  it("每次请求带不同的随机种子，同一套选项也能出不同的题", async () => {
+    const first = stubFetch(jsonResponse({ status: 200, data: "{}" }));
+    await POST(makeRequest({ options: {} }), contextFor("arithmetic"));
+    const firstBody = JSON.parse(String(first.mock.calls[0][1]?.body));
+
+    const second = stubFetch(jsonResponse({ status: 200, data: "{}" }));
+    await POST(makeRequest({ options: {} }), contextFor("arithmetic"));
+    const secondBody = JSON.parse(String(second.mock.calls[0][1]?.body));
+
+    expect(typeof firstBody.config.随机种子).toBe("string");
+    expect(firstBody.config.随机种子).not.toBe("");
+    expect(firstBody.config.随机种子).not.toBe(secondBody.config.随机种子);
+  });
 });
 
 describe("学科配置与提示词", () => {
