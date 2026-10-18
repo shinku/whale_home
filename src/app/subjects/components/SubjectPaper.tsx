@@ -1,6 +1,9 @@
 import type { TSubjectResult } from "../result";
 import type { TSubject } from "../subjects";
 import { QrCode } from "./QrCode";
+import { BlankBottom } from "./subject_paper/BlankBottom";
+import { CurrentDate } from "./subject_paper/CurrentDate";
+import { CurrentTime } from "./subject_paper/CurrentTime";
 import {
   ArithmeticPaper,
   CopybookPaper,
@@ -42,18 +45,19 @@ export const SubjectPaper = ({
           <div className="text-center text-[19px] font-bold">
             {result.title || subject.resultTitle}
           </div>
-          {result.subtitle ? (
-            <div className="mt-1 text-center text-[12px] text-gray-500">
-              {result.subtitle}
+
+          <div className="mt-2 flex gap-5 text-[10px] text-gray-500">
+            <div className="flex min-w-0 flex-1 items-end gap-1">
+              <span className="shrink-0">班级：</span>
+              <BlankBottom />
             </div>
-          ) : null}
-          <div className="mt-2 flex justify-between text-[10px] text-gray-500">
-            <span>＿＿月＿＿日</span>
-            <span>姓名：＿＿＿＿＿＿</span>
+            <div className="flex min-w-0 flex-1 items-end gap-1">
+              <span className="shrink-0">姓名：</span>
+              <BlankBottom />
+            </div>
           </div>
-          <div className="mt-1 flex justify-between text-[10px] text-gray-500">
-            <span>＿＿分＿＿秒</span>
-            <span>班级：＿＿＿＿＿＿</span>
+          <div className="mt-1 flex gap-5 justify-end text-[10px] text-gray-500">
+              <CurrentDate />
           </div>
         </div>
       </div>

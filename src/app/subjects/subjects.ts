@@ -45,8 +45,21 @@ export type TSubject = {
   showPaperHeader?: boolean;
   /** 结果页是否展示「保存为 PDF / Word」，默认展示 */
   showExport?: boolean;
+  /**
+   * 「保存为 Word」用的转换策略（上游 html_to_doc 的 toStrategy）：
+   * - `pdfkit-convert`：保真（后端把 HTML 渲染成 PDF 再逐页塞进 docx，Word 里是整页图片，不可编辑）
+   * - `regural`：真可编辑 Word，但复杂布局/样式还原度有限
+   * 不填时用 DEFAULT_DOC_STRATEGY。
+   */
+  docStrategy?: TDocStrategy;
   options: TSubjectOption[];
 };
+
+/** html_to_doc 的转换策略 */
+export type TDocStrategy = "regural" | "pdfkit-convert";
+
+/** 不单独指定时，保存为 Word 默认走保真策略 */
+export const DEFAULT_DOC_STRATEGY: TDocStrategy = "pdfkit-convert";
 
 const numberRange = (from: number, to: number, step: number) =>
   Array.from({ length: Math.floor((to - from) / step) + 1 }, (_, i) =>
@@ -305,6 +318,13 @@ export const SUBJECTS: TSubject[] = [
 
 export const getSubject = (slug: string): TSubject | undefined =>
   SUBJECTS.find((subject) => subject.slug === slug);
+
+/**
+ * 详情页是否需要导出文件。
+ * 沿用每个学科配置中的 showExport（未配置时默认需要导出）。
+ */
+export const isShowExport = (slug: TSubjectSlug) =>
+  getSubject(slug)?.showExport !== false;
 
 /** 表单初始值：把每个选项的 default 摊平成 { key: value } */
 export const defaultOptions = (subject: TSubject) =>

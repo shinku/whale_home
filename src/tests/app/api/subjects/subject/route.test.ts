@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
-import type { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 
-import { POST } from "@/app/api/subjects/[subject]/route";
+import { GET, POST } from "@/app/api/subjects/[subject]/route";
 import { SUBJECTS } from "@/app/subjects/subjects";
 import { jsonResponse, restoreFetch, stubFetch } from "@/tests/helpers/proxy";
 import { loadSubjectPrompt } from "@/utils/prompts";
@@ -12,12 +12,15 @@ const contextFor = (subject: string) => ({
   params: Promise.resolve({ subject }),
 });
 
-const makeRequest = (body: unknown, headers: Record<string, string> = {}) =>
-  new Request(`http://localhost/api/subjects/test`, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  }) as unknown as NextRequest;
+/** 构造真实的 NextRequest：GET 用 nextUrl.searchParams，普通 Request 上没有 */
+const makeRequest = (
+  path: string,
+  init?: { method?: string; body?: string; headers?: Record<string, string> },
+) =>
+  new NextRequest(new URL(path, "http://localhost"), {
+    ...init,
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+  });
 
 afterEach(() => {
   restoreFetch();
@@ -28,26 +31,40 @@ describe("POST /api/subjects/[subject]", () => {
   it("未知学科返回 404，且不请求上游", async () => {
     const fetchMock = stubFetch(jsonResponse({ data: {} }));
 
-    const res = await POST(makeRequest({ options: {} }), contextFor("unknown"));
+    const res = await POST(
+      makeRequest("/api/subjects/unknown", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("unknown"),
+    );
 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: "Unknown subject" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("把选项作为 config、src/prompts/<slug>.md 作为 prompt 发给 api/ai/subjects", async () => {
+  it("把选项作为 config、src/prompts/<slug>.md 作为 prompt 发给 api/ai/subjects，并回传 requestid", async () => {
     const fetchMock = stubFetch(
-      jsonResponse({ status: 200, data: '{"title":"口算练习卷","items":[]}' }),
+      jsonResponse({
+        status: 200,
+        data: '{"title":"口算练习卷","items":[]}',
+        requestid: "rid-1",
+      }),
     );
 
     const res = await POST(
-      makeRequest({ options: { 年级: "三年级", 题目数量: "20" } }),
+      makeRequest("/api/subjects/arithmetic", {
+        method: "POST",
+        body: JSON.stringify({ options: { 年级: "三年级", 题目数量: "20" } }),
+      }),
       contextFor("arithmetic"),
     );
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       data: '{"title":"口算练习卷","items":[]}',
+      requestid: "rid-1",
     });
 
     const [url, init] = fetchMock.mock.calls[0];
@@ -69,14 +86,15 @@ describe("POST /api/subjects/[subject]", () => {
     const fetchMock = stubFetch(jsonResponse({ status: 200, data: "{}" }));
 
     await POST(
-      makeRequest(
-        { options: {} },
-        {
+      makeRequest("/api/subjects/words", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+        headers: {
           "x-user-id": "user-123",
           connection: "upgrade",
           cookie: "session=secret",
         },
-      ),
+      }),
       contextFor("words"),
     );
 
@@ -94,7 +112,13 @@ describe("POST /api/subjects/[subject]", () => {
       ),
     );
 
-    const res = await POST(makeRequest({ options: {} }), contextFor("words"));
+    const res = await POST(
+      makeRequest("/api/subjects/words", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("words"),
+    );
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({
@@ -105,7 +129,13 @@ describe("POST /api/subjects/[subject]", () => {
   it("HTTP 200 但 body.status 不是 200 时按失败处理", async () => {
     stubFetch(jsonResponse({ status: 404, message: "Failed to get response" }));
 
-    const res = await POST(makeRequest({ options: {} }), contextFor("words"));
+    const res = await POST(
+      makeRequest("/api/subjects/words", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("words"),
+    );
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Failed to get response" });
@@ -117,7 +147,13 @@ describe("POST /api/subjects/[subject]", () => {
       .mockRejectedValue(new Error("network down")) as unknown as typeof fetch;
     jest.spyOn(console, "error").mockImplementation(() => {});
 
-    const res = await POST(makeRequest({ options: {} }), contextFor("words"));
+    const res = await POST(
+      makeRequest("/api/subjects/words", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("words"),
+    );
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
@@ -125,16 +161,98 @@ describe("POST /api/subjects/[subject]", () => {
 
   it("每次请求带不同的随机种子，同一套选项也能出不同的题", async () => {
     const first = stubFetch(jsonResponse({ status: 200, data: "{}" }));
-    await POST(makeRequest({ options: {} }), contextFor("arithmetic"));
+    await POST(
+      makeRequest("/api/subjects/arithmetic", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("arithmetic"),
+    );
     const firstBody = JSON.parse(String(first.mock.calls[0][1]?.body));
 
     const second = stubFetch(jsonResponse({ status: 200, data: "{}" }));
-    await POST(makeRequest({ options: {} }), contextFor("arithmetic"));
+    await POST(
+      makeRequest("/api/subjects/arithmetic", {
+        method: "POST",
+        body: JSON.stringify({ options: {} }),
+      }),
+      contextFor("arithmetic"),
+    );
     const secondBody = JSON.parse(String(second.mock.calls[0][1]?.body));
 
     expect(typeof firstBody.config.随机种子).toBe("string");
     expect(firstBody.config.随机种子).not.toBe("");
     expect(firstBody.config.随机种子).not.toBe(secondBody.config.随机种子);
+  });
+});
+
+describe("GET /api/subjects/[subject]?requestid=", () => {
+  it("未知学科返回 404，且不请求上游", async () => {
+    const fetchMock = stubFetch(jsonResponse({ status: 200, data: "{}" }));
+
+    const res = await GET(
+      makeRequest("/api/subjects/unknown?requestid=rid-1"),
+      contextFor("unknown"),
+    );
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Unknown subject" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("缺少 requestid 时返回 400，且不请求上游", async () => {
+    const fetchMock = stubFetch(jsonResponse({ status: 200, data: "{}" }));
+
+    const res = await GET(
+      makeRequest("/api/subjects/arithmetic"),
+      contextFor("arithmetic"),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "requestid is required" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("按 requestid 取回结果，并把 x-user-id 转发给上游", async () => {
+    const fetchMock = stubFetch(
+      jsonResponse({
+        status: 200,
+        data: '{"title":"口算练习卷","items":[]}',
+        requestid: "rid-1",
+      }),
+    );
+
+    const res = await GET(
+      makeRequest("/api/subjects/arithmetic?requestid=rid-1", {
+        headers: { "x-user-id": "user-123" },
+      }),
+      contextFor("arithmetic"),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      data: '{"title":"口算练习卷","items":[]}',
+      requestid: "rid-1",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${HOST}api/ai/subjects?requestid=rid-1`);
+    expect((init?.headers as Headers).get("x-user-id")).toBe("user-123");
+  });
+
+  it.each([
+    ["subject not found", "结果不存在或已过期"],
+    ["subject is expired", "结果不存在或已过期"],
+  ])("上游 message=%s 时转成用户可读提示", async (message, expected) => {
+    stubFetch(jsonResponse({ status: 404, message }, 500));
+
+    const res = await GET(
+      makeRequest("/api/subjects/words?requestid=rid-1"),
+      contextFor("words"),
+    );
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: expected });
   });
 });
 

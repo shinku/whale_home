@@ -20,7 +20,7 @@ declare global {
 
 /** 当前是否运行在小程序 webview 中（wx.miniProgram 可用） */
 export const isMiniProgram = () =>
-  typeof window !== "undefined" && Boolean(window.wx?.miniProgram);
+  typeof window !== "undefined" && Boolean((window as any).__wxjs_environment === "miniprogram");
 
 /** 跳转到小程序页面 */
 export const miniProgramNavigateTo = (url: string) => {
@@ -35,6 +35,31 @@ export const miniProgramNavigateTo = (url: string) => {
 export const jumpBakToMini = (list: { name: string; link: string }[]) => {
   miniProgramNavigateTo(
     "/pages/converResult/covert-result-page?list=" + JSON.stringify(list),
+  );
+};
+
+/**
+ * 跳转到小程序的子学科详情页，带上 requestid / openId 参数。
+ * 只有在小程序 webview 里（`wx.miniProgram` 可用）才有效。
+ * @param slug
+ * @param requestid
+ * @param openId
+ * @param showExport 详情页是否需要导出文件
+ */
+export const jumnToMiniProgramSubjectDetail = (
+  slug: string,
+  requestid: string,
+  openId: string,
+  showExport: boolean,
+) => {
+  const params = new URLSearchParams({
+    slug,
+    requestid,
+    openId,
+    showExport: String(showExport),
+  });
+  miniProgramNavigateTo(
+    `/pages/subjectDetail/subject-detail-page?${params.toString()}`,
   );
 };
 

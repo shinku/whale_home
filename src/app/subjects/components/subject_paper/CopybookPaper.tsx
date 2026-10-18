@@ -4,6 +4,8 @@ import { chunk } from "./shared";
 
 /** 每页 20 字（5 列 × 4 行），与 sub_html/字帖本.html 的 .cp-grid 一致 */
 const CHARS_PER_PAGE = 20;
+/** 每行 5 个字（原来是 grid-cols-5） */
+const CHARS_PER_ROW = 5;
 
 /**
  * 田字格：金色描边 + 虚线十字（对应原型里的 .tz-box / ::before / ::after）。
@@ -63,21 +65,39 @@ export const CopybookPaper = ({
             先观察笔顺 → 描红一遍 → 下方空格临写一遍
           </div>
 
-          <div className="grid grid-cols-5 gap-x-1.5 gap-y-2.5">
-            {page.map((item, index) => (
-              <div
-                key={`${pageIndex}-${index}-${itemText(item, "char")}`}
-                className="flex flex-col items-center gap-0.5"
-              >
-                <span className="h-3 text-[9px] tracking-[1px] text-[#8a5a2b]">
-                  {itemText(item, "pinyin")}
-                </span>
-                {/* 与原型一致：上方描红格，下方空格临写 */}
-                <TianZiGe char={itemText(item, "char")} />
-                <TianZiGe blank />
-              </div>
-            ))}
-          </div>
+          {/*
+            用 table 排版而不是 grid：导出的 Word 由 html-docxjs 转换，
+            flex / grid 不会还原，表格可以；表格与单元格本身不加边框和底色。
+          */}
+          <table className="w-full table-fixed border-collapse border-0 bg-transparent text-center">
+            <tbody>
+              {chunk(page, CHARS_PER_ROW).map((row, rowIndex) => (
+                <tr key={rowIndex} className="border-0 bg-transparent">
+                  {Array.from({ length: CHARS_PER_ROW }, (_, cellIndex) => {
+                    const item = row[cellIndex];
+
+                    return (
+                      <td
+                        key={cellIndex}
+                        className="border-0 bg-transparent px-0 py-1.5 align-middle"
+                      >
+                        {item ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="h-3 text-[9px] tracking-[1px] text-[#8a5a2b]">
+                              {itemText(item, "pinyin")}
+                            </span>
+                            {/* 与原型一致：上方描红格，下方空格临写 */}
+                            <TianZiGe char={itemText(item, "char")} />
+                            <TianZiGe blank />
+                          </div>
+                        ) : null}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
       ))}
     </div>

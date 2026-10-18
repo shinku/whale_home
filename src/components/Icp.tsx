@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 
 /**
  * ICP备案号
- * @returns 
+ * @returns
  */
 export const Icp = () => {
   const style = {
@@ -10,11 +10,11 @@ export const Icp = () => {
     margin: "20px 0",
     fontSize: "12px",
     color: "#666",
-    
+
   } as CSSProperties;
   const style2 = { color: "#666", textDecoration: "none" } as CSSProperties;
   return (
-    <div id="footer-beian" style={style}>
+    <div id="footer-beian" style={style} className="print:hidden">
       <a href="https://beian.miit.gov.cn/" target="_blank" style={style2}>沪ICP备2025121210号-1</a>
     </div>
   );

@@ -15,7 +15,7 @@ export const ArithmeticPaper = ({ items }: { items: TSubjectItem[] }) => (
         <span className="shrink-0 tabular-nums">
           {itemText(item, "question")}
         </span>
-        <span className="mt-1 h-[18px] min-w-[56px] flex-1 border-b border-dotted border-gray-400" />
+        <span className="mt-1 h-[18px] w-[56px] flex-1 border-b border-dotted border-gray-400" />
       </div>
     ))}
   </div>

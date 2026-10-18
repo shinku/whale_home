@@ -1,49 +1,34 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
-import {
-  isMiniProgram,
-  jumpBakToMini,
-  miniProgramNavigateTo,
-} from "@/utils/wx";
+import { useRouter } from "next/navigation";
+
 import { cn } from "@/utils/cn";
 import {
-  parseSubjectResult,
-  subjectResultToText,
-  type TSubjectResult,
-} from "../result";
-import {
   defaultOptions,
+  isShowExport,
   type TSubject,
   type TSubjectOption,
 } from "../subjects";
-import {
-  SubjectFragment,
-  type TSubjectFragmentHandle,
-} from "./SubjectFragment";
-import { SubjectPaper } from "./SubjectPaper";
-import { captureToBase64Pages } from "./paperToPdf";
+import { isMiniProgram, jumnToMiniProgramSubjectDetail } from "@/utils/wx";
 
 type TStatus = "idle" | "loading" | "error";
 
-/** PDF 直链前缀：上游返回的是 OSS 对象名（pub/xxx.pdf），需要拼上域名 */
-const PDF_FILE_HOST = "https://fms.whalepea.com/";
-
 /**
- * 所有学科共用的「选选项 → AI 生成 → 展示结果」流程。
- * 结果页统一带有二维码、保存为 PDF、保存为 Word。
+ * 子学科的配置页：选选项 → 调 `/api/subjects/<slug>` 生成。
+ *
+ * 生成成功后不在本页展示结果，而是带着返回的 requestid 跳到
+ * `/subjects/<slug>/detail?requestid=xxx`：详情页 SSR 按 requestid 取数渲染，
+ * 刷新 / 分享链接都能复现同一份结果。
  */
 export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
-  const fragmentRef = useRef<TSubjectFragmentHandle>(null);
-  const paperRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [values, setValues] = useState(() => defaultOptions(subject));
-  const [result, setResult] = useState<TSubjectResult | null>(null);
-  const [fallbackText, setFallbackText] = useState("");
   const [status, setStatus] = useState<TStatus>("idle");
   const [message, setMessage] = useState("");
 
-  /** 小程序 webview 里才会带 userId / openid 参数 */
+  /** 小程序 webview 里才会带 userId / openid 参数（生成接口用它当 x-user-id） */
   const userId = useMemo(() => {
     if (typeof window === "undefined") return "";
     const params = new URLSearchParams(window.location.search);
@@ -56,7 +41,6 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
   const generate = async () => {
     setStatus("loading");
     setMessage("");
-    setFallbackText("");
 
     try {
       const response = await fetch(`/api/subjects/${subject.slug}`, {
@@ -68,31 +52,27 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
         body: JSON.stringify({ options: values }),
       });
       const body = (await response.json()) as {
-        data?: unknown;
+        requestid?: string;
         error?: string;
       };
 
-      if (!response.ok) {
+      if (!response.ok || !body?.requestid) {
         throw new Error(body?.error || "生成失败，请稍后重试");
       }
-
-      const parsed = parseSubjectResult(body?.data);
-      if (!parsed) {
-        setResult(null);
-        setFallbackText(
-          typeof body?.data === "string"
-            ? body.data
-            : JSON.stringify(body?.data ?? "", null, 2),
+      const showExport = isShowExport(subject.slug);
+      if (isMiniProgram()) {
+        jumnToMiniProgramSubjectDetail(
+          subject.slug,
+          body.requestid,
+          userId,
+          showExport,
         );
-        setStatus("error");
-        setMessage("返回内容不是约定的 JSON 格式，已按原文展示");
         return;
       }
-
-      setResult(parsed);
-      setStatus("idle");
-      // 生成完成：结果页滑入视窗
-      fragmentRef.current?.showResult();
+      // 详情页要凭 requestid 取数；把当前 query（含小程序 userId / openid）一起带过去
+      const params = new URLSearchParams(window.location.search);
+      params.set("requestid", body.requestid);
+      router.push(`/subjects/${subject.slug}/detail?${params.toString()}`);
     } catch (error) {
       setStatus("error");
       setMessage(
@@ -101,95 +81,7 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
     }
   };
 
-  const saveWord = async () => {
-    if (!result) return;
-    setStatus("loading");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/admin/doc", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(userId ? { "x-user-id": userId } : {}),
-        },
-        body: JSON.stringify({
-          text: subjectResultToText(subject.slug, result, subject.resultTitle),
-        }),
-      });
-      const body = (await response.json()) as { data?: string; error?: string };
-      const link = body?.data;
-      if (!link) throw new Error(body?.error || "Word 生成失败");
-
-      const file = { name: `${subject.title}.docx`, link };
-      if (isMiniProgram()) {
-        miniProgramNavigateTo(
-          "/pages/converResult/covert-result-page?list=" +
-            JSON.stringify([file]),
-        );
-      } else {
-        window.open(link, "_blank", "noopener,noreferrer");
-      }
-      setStatus("idle");
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Word 生成失败");
-    }
-  };
-
-  /**
-   * 保存为 PDF：先把卷面 DOM 用 html2canvas 画成图片（按 A4 比例切页、
-   * 每页转成 base64），再交给 /api/convert 转发给上游拼成 PDF。
-   */
-  const savePdf = async () => {
-    const paper = paperRef.current;
-    if (!paper) return;
-    setStatus("loading");
-    setMessage("");
-
-    try {
-      const base64List = await captureToBase64Pages(paper);
-      if (base64List.length === 0) {
-        throw new Error("卷面导出失败，请重试");
-      }
-
-      const response = await fetch("/api/convert", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(userId ? { "x-user-id": userId } : {}),
-        },
-        body: JSON.stringify({ convertType: "base642pdf", base64List }),
-      });
-      const body = (await response.json()) as {
-        data?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !body?.data) {
-        throw new Error(body?.error || "PDF 生成失败，请稍后重试");
-      }
-
-      // 上游返回的是 OSS 对象名，拼成直链再打开
-      const link = PDF_FILE_HOST + body.data;
-      // 微信小程序 webview 里（wx.miniProgram 可用）交给小程序跳转下载；
-      // 普通 PC / 手机浏览器直接开新窗口预览
-      if (isMiniProgram()) {
-        jumpBakToMini([{ name: `${subject.title}.pdf`, link: body.data as string }]);
-      } else {
-        window.open(link, "_blank", "noopener,noreferrer");
-      }
-      setStatus("idle");
-    } catch (error) {
-      setStatus("error");
-      setMessage(
-        error instanceof Error ? error.message : "PDF 生成失败，请稍后重试",
-      );
-    }
-  };
-
-  /** 配置页（ConfigFragment 的内容） */
-  const configPanel = (
+  return (
     <div className="mx-auto w-full max-w-[794px] px-4 pt-6 pb-16">
       <header className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">{subject.title}</h1>
@@ -228,75 +120,6 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
         ) : null}
       </div>
     </div>
-  );
-
-  /** 结果页（ResultFragment 的内容） */
-  const showExport = subject.showExport !== false;
-
-  const resultPanel = (
-    <div className="mx-auto w-full max-w-[794px] px-4 pt-6">
-      {result ? (
-        <div className="flex flex-col gap-3">
-          {/* 用 ref 框住卷面，保存为 PDF 时截取这一块 */}
-          <div ref={paperRef}>
-            <SubjectPaper subject={subject} result={result} />
-          </div>
-
-          {/* 不需要导出的学科（例如成语填空的即时填字）这里就不渲染按钮 */}
-          {showExport ? (
-            <>
-              <div className="flex gap-3 print:hidden">
-                <button
-                  type="button"
-                  onClick={savePdf}
-                  disabled={status === "loading"}
-                  className="h-12 flex-1 rounded-xl bg-blue-600 text-sm font-semibold text-white disabled:opacity-60"
-                >
-                  {status === "loading" ? "生成中..." : "保存为 PDF"}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveWord}
-                  disabled={status === "loading"}
-                  className="h-12 flex-1 rounded-xl border border-gray-300 bg-white text-sm font-semibold text-gray-700 disabled:opacity-60"
-                >
-                  保存为 Word
-                </button>
-              </div>
-
-              {message ? (
-                <p
-                  className={cn(
-                    "text-center text-sm print:hidden",
-                    status === "error" ? "text-red-500" : "text-gray-500",
-                  )}
-                >
-                  {message}
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      ) : (
-        <p className="pt-24 text-center text-sm text-gray-400">
-          还没有生成内容，先回到配置页生成吧
-        </p>
-      )}
-
-      {fallbackText ? (
-        <pre className="mt-4 max-h-[420px] overflow-auto rounded-xl border border-gray-200 bg-white p-4 text-xs whitespace-pre-wrap text-gray-600 print:hidden">
-          {fallbackText}
-        </pre>
-      ) : null}
-    </div>
-  );
-
-  return (
-    <SubjectFragment
-      ref={fragmentRef}
-      config={configPanel}
-      result={resultPanel}
-    />
   );
 };
 

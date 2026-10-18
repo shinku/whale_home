@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSubject } from "@/app/subjects/subjects";
-import { getApiHost } from "@/utils";
-import { loadSubjectPrompt } from "@/utils/prompts";
+import { generateSubject, getSubjectByRequestId } from "@/app/subjects/service";
 
 type TRouteContext = {
   params: Promise<{ subject: string }>;
 };
 
-/** POST /api/ai/subjects 的响应体 */
-type TSubjectAiResponse = {
-  status?: number;
-  data?: unknown;
-  message?: string;
-};
+const userIdOf = (request: NextRequest) =>
+  request.headers.get("x-user-id") ?? undefined;
 
 /**
- * 学科内容生成：把选项与系统提示词（src/prompts/<slug>.md）交给后端出题接口
- * `POST api/ai/subjects`（见 AI 出题接口对接文档）。
+ * 出题：把选项与系统提示词（src/prompts/<slug>.md）交给后端
+ * `POST api/ai/subjects`（见 AI 出题接口对接文档 2、3 节），
+ * 成功时连同 requestid 一起返回，前端凭它跳到详情页。
  *
- * 调用方式（文档 2、3 节）：
- * - POST `${getApiHost()}api/ai/subjects`，body 为 `{ config, prompt }`，两者都必填；
- * - config 由服务端 JSON.stringify 后作为用户消息，prompt 作为 System Prompt；
- * - 成功返回 `{ status: 200, data: "模型返回的纯文本" }`，
- *   失败时 HTTP 500 而 body.status 是 404，所以 HTTP 与 body.status 都要判断。
- *
- * config 里额外带一个每次都不同的 `随机种子`：模型没有跨请求记忆，
- * 同一套选项反复生成时靠它当随机源，避免每次都出同一批题
- * （对应各 prompt 里的「随机种子与多样性」小节）。
+ * 失败时 HTTP 500 而 body.status 是 404，所以 HTTP 与 body.status 都要判断。
  */
 export async function POST(request: NextRequest, { params }: TRouteContext) {
   const { subject: slug } = await params;
@@ -41,45 +29,59 @@ export async function POST(request: NextRequest, { params }: TRouteContext) {
     options?: Record<string, unknown>;
   };
 
-  const headers = new Headers({ "content-type": "application/json" });
-  const userId = request.headers.get("x-user-id");
-  if (userId) headers.set("x-user-id", userId);
+  const result = await generateSubject({
+    subject,
+    options: payload?.options,
+    userId: userIdOf(request),
+  });
 
-  // 毫秒时间戳 + 随机串，保证每次调用的种子都不同
-  const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-  try {
-    const response = await fetch(getApiHost() + "api/ai/subjects", {
-      method: "POST",
-      headers,
-      cache: "no-store",
-      body: JSON.stringify({
-        config: {
-          subject: subject.slug,
-          ...(payload.options ?? {}),
-          随机种子: seed,
-        },
-        prompt: loadSubjectPrompt(subject.slug),
-      }),
-    });
-
-    const body = (await response
-      .json()
-      .catch(() => null)) as TSubjectAiResponse | null;
-
-    if (!response.ok || body?.status !== 200) {
-      return NextResponse.json(
-        { error: body?.message || "出题失败，请稍后重试" },
-        { status: response.ok ? 500 : response.status },
-      );
-    }
-
-    return NextResponse.json({ data: body.data });
-  } catch (error) {
-    console.error("Error generating subject content:", error);
+  if (!result.ok) {
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
+      { error: result.error },
+      { status: result.status },
     );
   }
+
+  return NextResponse.json({
+    data: result.data,
+    requestid: result.requestid,
+  });
+}
+
+/**
+ * 按 requestid 复查这次出题结果（24 小时内有效）：
+ * 转发到 `GET api/ai/subjects?requestid=xxx`，响应形态与 POST 一致。
+ */
+export async function GET(request: NextRequest, { params }: TRouteContext) {
+  const { subject: slug } = await params;
+  const subject = getSubject(slug);
+
+  if (!subject) {
+    return NextResponse.json({ error: "Unknown subject" }, { status: 404 });
+  }
+
+  const requestid = request.nextUrl.searchParams.get("requestid")?.trim() ?? "";
+  if (!requestid) {
+    return NextResponse.json(
+      { error: "requestid is required" },
+      { status: 400 },
+    );
+  }
+
+  const result = await getSubjectByRequestId({
+    requestid,
+    userId: userIdOf(request),
+  });
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status },
+    );
+  }
+
+  return NextResponse.json({
+    data: result.data,
+    requestid: result.requestid,
+  });
 }

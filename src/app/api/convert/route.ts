@@ -11,8 +11,19 @@ import { getApiHost } from "@/utils";
 export type TConvertPayload = {
   /** 转换类型，对应 CONVERTERS 的 key */
   convertType?: string;
-  /** 图片 base64 列表（可带 data URL 前缀），数组顺序即 PDF 页序 */
-  base64List?: unknown;
+  /** 前端拼好的 HTML（卷面），两个接口都以它作为输入 */
+  html?: unknown;
+  /** PDF 纸张尺寸，默认 A4 */
+  format?: unknown;
+  /** PDF 是否横向，默认 false */
+  landscape?: unknown;
+  /** PDF 是否打印背景，默认 true */
+  printBackground?: unknown;
+  /**
+   * html2doc 的转换策略：`pdfkit-convert` 保真（整页图片，不可编辑）、
+   * `regural` 真可编辑但还原度低
+   */
+  toStrategy?: "pdfkit-convert" | "regural";
 };
 
 /** 一种转换：上游路径 + 把前端 payload 拼成上游 body */
@@ -24,11 +35,23 @@ type TConverter = {
 };
 
 export const CONVERTERS: Record<string, TConverter> = {
-  /** 图片 base64 -> PDF，上游 POST /api/file/base64_to_pdf */
-  base642pdf: {
-    path: "api/file/base64_to_pdf",
-    buildBody: ({ base64List }) => ({
-      base64_list: Array.isArray(base64List) ? base64List : [],
+  /** HTML -> PDF（无头 Chromium 打印），上游 POST /api/file/html_to_pdf */
+  html2pdf: {
+    path: "api/file/html_to_pdf",
+    buildBody: ({ html, format, landscape, printBackground }) => ({
+      html: typeof html === "string" ? html : "",
+      format: typeof format === "string" && format ? format : "A4",
+      landscape: landscape === true,
+      print_background: printBackground !== false,
+    }),
+  },
+  /** HTML -> Word（docx），上游 POST /api/file/html_to_doc */
+  html2doc: {
+    path: "api/file/html_to_doc",
+    buildBody: ({ html, toStrategy }) => ({
+      html: typeof html === "string" ? html : "",
+      // 不传时默认走保真策略；传了的值原样透传（非法值由上游按 regural 兜底）
+      toStrategy: toStrategy || "pdfkit-convert",
     }),
   },
 };
