@@ -59,6 +59,8 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
       if (!response.ok || !body?.requestid) {
         throw new Error(body?.error || "生成失败，请稍后重试");
       }
+      // 跳转前恢复按钮状态，避免返回生成页时按钮仍显示为禁用
+      setStatus("idle");
       const showExport = isShowExport(subject.slug);
       if (isMiniProgram()) {
         jumnToMiniProgramSubjectDetail(
