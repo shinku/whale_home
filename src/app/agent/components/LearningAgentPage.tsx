@@ -25,7 +25,6 @@ import {
   Image,
   Space,
   Spin,
-  Tag,
   Tooltip,
   Typography,
   Upload,
@@ -121,23 +120,6 @@ const executionStatus = (
   return "pending";
 };
 
-const statusTag = (message: TAgentMessage) => {
-  if (message.status === "streaming") {
-    return (
-      <Tag color="processing" icon={<Spin size="small" />}>
-        回答中
-      </Tag>
-    );
-  }
-  if (message.status === "error") {
-    return <Tag color="error">生成失败</Tag>;
-  }
-  if (message.status === "stopped") {
-    return <Tag>已停止</Tag>;
-  }
-  return <Tag color="success">已完成</Tag>;
-};
-
 function AssistantMessage({ message }: { message: TAgentMessage }) {
   const thoughtItems = useMemo<ThoughtChainItem[]>(() => {
     const items: ThoughtChainItem[] = [];
@@ -160,16 +142,7 @@ function AssistantMessage({ message }: { message: TAgentMessage }) {
     <Card
       size="small"
       className="w-full max-w-[calc(100vw-88px)] border-gray-200 shadow-none sm:max-w-[720px]"
-      classNames={{
-        header: "!px-3 !py-3 text-[12px]",
-        body: "!p-3",
-      }}
-      styles={{
-        header: {
-          display: "none",
-        }
-      }}
-      title={<></>}
+      classNames={{ body: "!p-3" }}
     >
       {thoughtItems.length > 0 ? (
         <Collapse
@@ -724,7 +697,10 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                   assistant: {
                     placement: "start",
                     variant: "borderless",
-                    avatar: { icon: <RobotOutlined /> },
+                    avatar: {
+                      src: "/logo.svg",
+                      alt: "AI 学习助手",
+                    },
                     classNames: { content: "!p-0" },
                   },
                 }}
