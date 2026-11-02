@@ -17,15 +17,21 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
+    "@ant-design/x": "^1.6.1",
     "@fontsource/charis-sil": "^5.3.0",
     "antd": "^5.26.6",
     "clsx": "^2.1.1",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.16.22",
     "next": "^16.0.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
     "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
