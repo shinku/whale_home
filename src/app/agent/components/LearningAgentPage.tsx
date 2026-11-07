@@ -813,9 +813,9 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                   </div>
                 }
               />
-              <Typography.Text className="mt-2 block text-center text-[10px] text-gray-400">
+              <div className="mt-2 block text-center text-[10px] text-gray-400">
                 AI 回答可能存在错误，请结合教材和老师讲解核验。
-              </Typography.Text>
+              </div>
             </div>
           </div>
         </main>

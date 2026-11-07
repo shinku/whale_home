@@ -1,6 +1,7 @@
 import { AntdRegistry } from "@ant-design/nextjs-registry";
-import { Icp } from "@/components/Icp";
 import { GlobalModalProvider } from "@/components/GlobalModalProvider";
+import { IOSOverscrollGuard } from "@/components/IOSOverscrollGuard";
+import { RouteAwareIcp } from "@/components/RouteAwareIcp";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -44,8 +45,9 @@ export default function RootLayout({
       >
         <AntdRegistry>
           <GlobalModalProvider>
+            <IOSOverscrollGuard />
             {children}
-            <Icp />
+            <RouteAwareIcp />
           </GlobalModalProvider>
         </AntdRegistry>
       </body>
