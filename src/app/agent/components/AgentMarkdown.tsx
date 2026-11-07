@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 import { SoundOutlined } from "@ant-design/icons";
 import { message as antdMessage } from "antd";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
@@ -8,6 +10,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
+import { cn } from "@/utils/cn";
 import { speakEnglish } from "@/utils/speech";
 
 import { getPronounceText, preparePronounceMarkdown } from "../pronounce";
@@ -22,8 +25,86 @@ export const AgentMarkdown = ({
 }: {
   content: string;
   compact?: boolean;
-}) => (
-  <div
+}) => {
+  const [playingText, setPlayingText] = useState<string | null>(null);
+  const playbackIdRef = useRef(0);
+  const activeIconRef = useRef<HTMLSpanElement>(null);
+  const activeBackgroundRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const icon = activeIconRef.current;
+    if (
+      !icon ||
+      typeof icon.animate !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const animation = icon.animate(
+      [
+        { transform: "scale(1)" },
+        { transform: "scale(1.18)" },
+        { transform: "scale(0.92)" },
+        { transform: "scale(1)" },
+      ],
+      {
+        duration: 600,
+        iterations: Infinity,
+        easing: "ease-in-out",
+      },
+    );
+    return () => animation.cancel();
+  }, [playingText]);
+
+  useEffect(() => {
+    const background = activeBackgroundRef.current;
+    if (
+      !background ||
+      typeof background.animate !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const animation = background.animate(
+      [
+        { backgroundPosition: "0% 50%" },
+        { backgroundPosition: "200% 50%" },
+      ],
+      {
+        duration: 1600,
+        iterations: Infinity,
+        easing: "linear",
+      },
+    );
+    return () => animation.cancel();
+  }, [playingText]);
+
+  const speak = (text: string) => {
+    const playbackId = ++playbackIdRef.current;
+    try {
+      speakEnglish(text, {
+        onStart: () => {
+          if (playbackIdRef.current === playbackId) setPlayingText(text);
+        },
+        onEnd: () => {
+          if (playbackIdRef.current === playbackId) setPlayingText(null);
+        },
+        onError: () => {
+          if (playbackIdRef.current === playbackId) setPlayingText(null);
+        },
+      });
+    } catch (error) {
+      if (playbackIdRef.current === playbackId) setPlayingText(null);
+      antdMessage.warning(
+        error instanceof Error ? error.message : "当前浏览器不支持语音朗读",
+      );
+    }
+  };
+
+  return (
+    <div
     className={
       compact
         ? "text-[12px] leading-5 break-words text-gray-600 [&_a]:text-blue-600 [&_p]:mb-2 [&_p:last-child]:mb-0"
@@ -40,26 +121,37 @@ export const AgentMarkdown = ({
         a: ({ href, title, children }) => {
           const pronounceText = href ? getPronounceText(href) : null;
           if (pronounceText) {
+            const playing = playingText === pronounceText;
             return (
               <button
                 type="button"
                 title={title || `英式女声朗读 ${pronounceText}`}
                 aria-label={`英式女声朗读 ${pronounceText}`}
-                className="mx-0.5 inline-flex max-w-full items-start gap-1 rounded-md border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-left align-baseline text-[12px] leading-5 font-medium text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
-                onClick={() => {
-                  try {
-                    speakEnglish(pronounceText);
-                  } catch (error) {
-                    antdMessage.warning(
-                      error instanceof Error
-                        ? error.message
-                        : "当前浏览器不支持语音朗读",
-                    );
-                  }
-                }}
+                aria-pressed={playing}
+                className={cn(
+                  "relative mx-0.5 inline-flex max-w-full items-start gap-1 overflow-hidden rounded-md border px-1.5 py-0.5 text-left align-baseline text-[12px] leading-5 font-medium transition",
+                  playing
+                    ? "border-transparent text-white"
+                    : "border-blue-200 bg-blue-50 text-blue-600 hover:border-blue-300 hover:bg-blue-100",
+                )}
+                onClick={() => speak(pronounceText)}
               >
-                <SoundOutlined className="mt-1 shrink-0 text-[11px]" />
-                <span className="min-w-0 break-words">{children}</span>
+                {playing ? (
+                  <span
+                    ref={activeBackgroundRef}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(90deg,#3b82f6,#6366f1,#a855f7,#3b82f6)] bg-[length:200%_100%] will-change-[background-position]"
+                  />
+                ) : null}
+                <span
+                  ref={playing ? activeIconRef : undefined}
+                  className="relative z-10 inline-flex shrink-0"
+                >
+                  <SoundOutlined className="mt-1 text-[11px]" />
+                </span>
+                <span className="relative z-10 min-w-0 break-words">
+                  {children}
+                </span>
               </button>
             );
           }
@@ -90,5 +182,6 @@ export const AgentMarkdown = ({
     >
       {preparePronounceMarkdown(content)}
     </ReactMarkdown>
-  </div>
-);
+    </div>
+  );
+};

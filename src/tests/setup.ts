@@ -6,3 +6,17 @@ import { jest } from "@jest/globals";
 jest.mock("@/utils", () => ({
   getApiHost: () => "https://api.example.test/",
 }));
+
+// @ant-design/icons 6.x 内部依赖 ESM 包，测试中不校验图标渲染，统一替换为空组件。
+jest.mock("@ant-design/icons", () => {
+  const Icon = () => null;
+  return new Proxy(
+    { __esModule: true },
+    {
+      get(target, property) {
+        if (property === "__esModule") return true;
+        return Icon;
+      },
+    },
+  );
+});

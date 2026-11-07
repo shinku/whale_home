@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Select } from "antd";
 
 import { DifficultySelector } from "@/components/DifficultySelector";
-import { GenerateContentButton } from "@/components/GenerateContentButton";
+import { GradientButton } from "@/components/GradientButton";
 import { PageSelector } from "@/components/PageSelector";
 import { SubjectOptionButton } from "@/components/SubjectOptionButton";
 import { cn } from "@/utils/cn";
@@ -168,7 +168,9 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
           />
         ))}
 
-        <GenerateContentButton
+        <GradientButton
+          text="生成内容"
+          loadingText="生成中..."
           onClick={generate}
           loading={status === "loading"}
           disabled={isGenerateDisabled}

@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { RobotOutlined } from "@ant-design/icons";
 import {
-  CloseOutlined,
-  DeleteOutlined,
-  FilePdfOutlined,
-  MenuOutlined,
-  PictureOutlined,
-  PlusOutlined,
-  RobotOutlined,
-  SendOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+  AddOutline,
+  CloseOutline,
+  DeleteOutline,
+  FileOutline,
+  PictureOutline,
+  SendOutline,
+  MoreOutline,
+  UserOutline,
+} from "antd-mobile-icons";
 import {
   Alert,
   Button,
@@ -30,6 +30,7 @@ import {
 import { Bubble, Conversations, Prompts, Sender, Welcome } from "@ant-design/x";
 
 import { elementToExportHtml } from "@/app/subjects/components/paperToHtml";
+import { GradientButton } from "@/components/GradientButton";
 import { useGlobalModal } from "@/components/GlobalModalProvider";
 
 import {
@@ -40,10 +41,7 @@ import {
 import { imageFileToBase64 } from "../imageBase64";
 import type { TAgentConversation, TAgentEvent, TAgentMessage } from "../types";
 import { AgentMarkdown } from "./AgentMarkdown";
-import {
-  findRecentQuestion,
-  prependQuestionHtml,
-} from "./agentExportHtml";
+import { findRecentQuestion, prependQuestionHtml } from "./agentExportHtml";
 
 const STORAGE_KEY = "whale-learning-agent-conversations-v1";
 const INITIAL_CONVERSATION_ID = "conversation-initial";
@@ -121,10 +119,7 @@ function AssistantMessage({
 
     setExporting(true);
     try {
-      const html = prependQuestionHtml(
-        question,
-        elementToExportHtml(content),
-      );
+      const html = prependQuestionHtml(question, elementToExportHtml(content));
       const response = await fetch("/api/convert", {
         method: "POST",
         headers: {
@@ -149,16 +144,13 @@ function AssistantMessage({
       showModal(
         {
           title: "PDF 导出成功",
-          content:
-            "文件已保存到你的账号，请在小程序「我的文件」中查看和下载。",
+          content: "文件已保存到你的账号，请在小程序「我的文件」中查看和下载。",
         },
         "success",
       );
     } catch (error) {
       antdMessage.error(
-        error instanceof Error
-          ? error.message
-          : "PDF 生成失败，请稍后重试",
+        error instanceof Error ? error.message : "PDF 生成失败，请稍后重试",
       );
     } finally {
       setExporting(false);
@@ -180,13 +172,12 @@ function AssistantMessage({
       actions={
         canUseActions
           ? [
-
               <Button
                 key="export"
                 type="text"
                 size="small"
-                icon={<FilePdfOutlined />}
-                className="!text-[14px] !text-orange-600 font-[600]!"
+                icon={<FileOutline />}
+                className="!text-[14px] font-[600]! !text-orange-600"
                 loading={exporting}
                 disabled={!userId}
                 title={userId ? "导出为 PDF" : "缺少用户身份，无法导出"}
@@ -550,33 +541,32 @@ export function LearningAgentPage({ openid }: { openid: string }) {
   const conversationItems = conversations.map((conversation) => ({
     key: conversation.id,
     label: conversation.title,
-    icon: <RobotOutlined />,
+    // icon: <RobotOutlined />,
   }));
 
   const ConversationPanel = (
     <div className="flex h-full flex-col gap-4">
-      <Button
-        block
-        type="primary"
-        icon={<PlusOutlined />}
+      <GradientButton
+        text="新建对话"
+        className="h-[36px]! rounded-[8px]! text-[14px]! font-[600]"
+        icon={<AddOutline />}
         onClick={createNewConversation}
-      >
-        新建对话
-      </Button>
-      <Typography.Text className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+      />
+      <div className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
         最近会话
-      </Typography.Text>
+      </div>
       {conversationItems.length > 0 ? (
         <Conversations
           items={conversationItems}
           activeKey={activeConversationId}
+          classNames={{ item: "!rounded-md !text-[10px]" }}
           onActiveChange={switchConversation}
           menu={(conversation) => ({
             items: [
               {
                 key: "delete",
                 label: "删除会话",
-                icon: <DeleteOutlined />,
+                icon: <DeleteOutline />,
                 danger: true,
               },
             ],
@@ -586,14 +576,11 @@ export function LearningAgentPage({ openid }: { openid: string }) {
               }
             },
           })}
-          className="min-h-0 flex-1 overflow-y-auto"
+          className="min-h-0 flex-1 overflow-y-auto !p-3"
         />
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无会话" />
       )}
-      <Typography.Text className="text-xs text-gray-400">
-        会话记录保存在当前浏览器中。
-      </Typography.Text>
     </div>
   );
 
@@ -625,15 +612,15 @@ export function LearningAgentPage({ openid }: { openid: string }) {
   return (
     <div className="min-h-[calc(100dvh-64px)] bg-slate-50">
       <div className="mx-auto flex h-[calc(100dvh-64px)] min-h-[640px] max-w-[1440px] overflow-hidden bg-white">
-        <aside className="hidden w-[280px] shrink-0 border-r border-gray-200 bg-gray-50 p-4 lg:block">
+        <aside className="hidden w-[280px] shrink-0 border-r border-gray-200 bg-gray-50 p-2">
           {ConversationPanel}
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <header className="flex min-h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+          <header className="flex min-h-16 items-center gap-3 border-b border-gray-200 bg-white px-2 py-3 sm:px-6">
             <Button
               className="lg:hidden"
-              icon={<MenuOutlined />}
+              icon={<MoreOutline />}
               aria-label="打开会话列表"
               onClick={() => setDrawerOpen(true)}
             />
@@ -707,7 +694,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                     placement: "end",
                     variant: "filled",
                     shape: "corner",
-                    avatar: { icon: <UserOutlined /> },
+                    avatar: { icon: <UserOutline /> },
                     classNames: { content: "!p-3 !text-[12px]" },
                   },
                   assistant: {
@@ -743,7 +730,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                   </div>
                   <Button
                     type="text"
-                    icon={<CloseOutlined />}
+                    icon={<CloseOutline />}
                     aria-label="移除待发送图片"
                     onClick={() => setPendingImage("")}
                   />
@@ -773,6 +760,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                 disabled={!openid || isProcessingImage}
                 submitType="enter"
                 autoSize={{ minRows: 1, maxRows: 5 }}
+                classNames={{ content: "!p-2" }}
                 prefix={
                   <Upload
                     accept="image/*"
@@ -783,7 +771,8 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                     <Tooltip title="上传图片">
                       <Button
                         type="text"
-                        icon={<PictureOutlined />}
+                        // icon={<PictureOutlined />}
+                        icon={<PictureOutline />}
                         loading={isProcessingImage}
                         disabled={!openid || isLoading}
                         aria-label="上传图片"
@@ -798,7 +787,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                     <Button
                       type="primary"
                       shape="circle"
-                      icon={<SendOutlined />}
+                      icon={<SendOutline />}
                       disabled={
                         !openid ||
                         isProcessingImage ||
@@ -824,7 +813,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                   </div>
                 }
               />
-              <Typography.Text className="mt-2 block text-center text-[11px] text-gray-400">
+              <Typography.Text className="mt-2 block text-center text-[10px] text-gray-400">
                 AI 回答可能存在错误，请结合教材和老师讲解核验。
               </Typography.Text>
             </div>
@@ -833,10 +822,23 @@ export function LearningAgentPage({ openid }: { openid: string }) {
       </div>
 
       <Drawer
-        title="AI 学习助手"
+        title={
+          <div className="flex items-center gap-2">
+            <Image src="/logo.svg" width={24} height={24} alt="" />
+            鲸鱼智能学习助手
+          </div>
+        }
         placement="left"
         width={300}
         open={drawerOpen}
+        styles={{
+          header: {
+            padding: "12px ",
+          },
+          body: {
+            padding: "12px ",
+          },
+        }}
         onClose={() => setDrawerOpen(false)}
       >
         {ConversationPanel}
