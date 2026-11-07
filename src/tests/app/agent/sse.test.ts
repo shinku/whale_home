@@ -189,6 +189,35 @@ describe("streamAgentChat", () => {
     });
   });
 
+  it("不向聊天页面透传 thinking 和 execution 事件", async () => {
+    stubFetch(
+      new Response(
+        [
+          'event: thinking\ndata: {"type":"thinking","content":"内部思考"}\n\n',
+          'event: execution\ndata: {"type":"execution","stage":"start","tool":"demo","content":"执行工具"}\n\n',
+          'event: answer\ndata: {"type":"answer","content":"最终回答"}\n\n',
+          'event: done\ndata: {"type":"done","durationMs":10}\n\n',
+        ].join(""),
+        {
+          status: 200,
+          headers: { "Content-Type": "text/event-stream; charset=utf-8" },
+        },
+      ),
+    );
+    const onEvent = jest.fn<(event: TAgentEvent) => void>();
+
+    await streamAgentChat({
+      openid: "openid-1",
+      message: "你好",
+      onEvent,
+    });
+
+    expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual([
+      "answer",
+      "done",
+    ]);
+  });
+
   it("网络失败时抛出原始错误", async () => {
     stubFetchReject(new Error("network down"));
 

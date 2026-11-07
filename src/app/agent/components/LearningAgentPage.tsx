@@ -1,25 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
-  CheckCircleOutlined,
   CloseOutlined,
-  ClockCircleOutlined,
   DeleteOutlined,
+  FilePdfOutlined,
   MenuOutlined,
   PictureOutlined,
   PlusOutlined,
   RobotOutlined,
   SendOutlined,
   UserOutlined,
-  WarningOutlined,
 } from "@ant-design/icons";
 import {
   Alert,
   Button,
   Card,
-  Collapse,
   Drawer,
   Empty,
   Image,
@@ -30,15 +27,10 @@ import {
   Upload,
   message as antdMessage,
 } from "antd";
-import {
-  Bubble,
-  Conversations,
-  Prompts,
-  Sender,
-  ThoughtChain,
-  Welcome,
-  type ThoughtChainItem,
-} from "@ant-design/x";
+import { Bubble, Conversations, Prompts, Sender, Welcome } from "@ant-design/x";
+
+import { elementToExportHtml } from "@/app/subjects/components/paperToHtml";
+import { useGlobalModal } from "@/components/GlobalModalProvider";
 
 import {
   MAX_AGENT_HISTORY_LENGTH,
@@ -46,13 +38,12 @@ import {
   streamAgentChat,
 } from "../sse";
 import { imageFileToBase64 } from "../imageBase64";
-import type {
-  TAgentConversation,
-  TAgentEvent,
-  TAgentExecution,
-  TAgentMessage,
-} from "../types";
+import type { TAgentConversation, TAgentEvent, TAgentMessage } from "../types";
 import { AgentMarkdown } from "./AgentMarkdown";
+import {
+  findRecentQuestion,
+  prependQuestionHtml,
+} from "./agentExportHtml";
 
 const STORAGE_KEY = "whale-learning-agent-conversations-v1";
 const INITIAL_CONVERSATION_ID = "conversation-initial";
@@ -105,91 +96,130 @@ const historyFrom = (messages: TAgentMessage[]) =>
       content: message.content.slice(0, MAX_AGENT_MESSAGE_LENGTH),
     }));
 
-const executionIcon = (execution: TAgentExecution) => {
-  if (execution.stage === "end") return <CheckCircleOutlined />;
-  if (execution.stage === "error") return <WarningOutlined />;
-  if (execution.stage === "start") return <ClockCircleOutlined />;
-  return <RobotOutlined />;
-};
+function AssistantMessage({
+  message,
+  question,
+  userId,
+}: {
+  message: TAgentMessage;
+  question: string;
+  userId: string;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const { showModal } = useGlobalModal();
+  const canUseActions =
+    Boolean(message.content) && message.status !== "streaming";
 
-const executionStatus = (
-  execution: TAgentExecution,
-): ThoughtChainItem["status"] => {
-  if (execution.stage === "end") return "success";
-  if (execution.stage === "error") return "error";
-  return "pending";
-};
+  const exportPdf = async () => {
+    const content = contentRef.current;
+    if (!content || exporting) return;
+    if (!userId) {
+      antdMessage.warning("缺少用户身份，暂时无法导出 PDF");
+      return;
+    }
 
-function AssistantMessage({ message }: { message: TAgentMessage }) {
-  const thoughtItems = useMemo<ThoughtChainItem[]>(() => {
-    const items: ThoughtChainItem[] = [];
-
-    message.executions.forEach((execution, index) => {
-      items.push({
-        key: execution.id,
-        title: execution.tool || `工具执行 ${index + 1}`,
-        icon: executionIcon(execution),
-        description: execution.stage,
-        status: executionStatus(execution),
-        content: <AgentMarkdown content={execution.content} compact />,
+    setExporting(true);
+    try {
+      const html = prependQuestionHtml(
+        question,
+        elementToExportHtml(content),
+      );
+      const response = await fetch("/api/convert", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-user-id": userId,
+        },
+        body: JSON.stringify({
+          convertType: "html2pdf",
+          html,
+          printBackground: true,
+        }),
       });
-    });
+      const body = (await response.json().catch(() => null)) as {
+        data?: string;
+        error?: string;
+      } | null;
 
-    return items;
-  }, [message]);
+      if (!response.ok || !body?.data) {
+        throw new Error(body?.error || "PDF 生成失败，请稍后重试");
+      }
+
+      showModal(
+        {
+          title: "PDF 导出成功",
+          content:
+            "文件已保存到你的账号，请在小程序「我的文件」中查看和下载。",
+        },
+        "success",
+      );
+    } catch (error) {
+      antdMessage.error(
+        error instanceof Error
+          ? error.message
+          : "PDF 生成失败，请稍后重试",
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <Card
       size="small"
-      className="w-full max-w-[calc(100vw-88px)] border-gray-200 shadow-none sm:max-w-[720px]"
+      className="w-full border-gray-200 shadow-none"
       classNames={{ body: "!p-3" }}
+      title={
+        message.durationMs ? (
+          <span className="text-[12px] font-normal text-gray-400">
+            用时 {(message.durationMs / 1000).toFixed(1)} 秒
+          </span>
+        ) : undefined
+      }
+      actions={
+        canUseActions
+          ? [
+
+              <Button
+                key="export"
+                type="text"
+                size="small"
+                icon={<FilePdfOutlined />}
+                className="!text-[14px] !text-orange-600 font-[600]!"
+                loading={exporting}
+                disabled={!userId}
+                title={userId ? "导出为 PDF" : "缺少用户身份，无法导出"}
+                onClick={() => void exportPdf()}
+              >
+                导出 PDF
+              </Button>,
+            ]
+          : undefined
+      }
     >
-      {thoughtItems.length > 0 ? (
-        <Collapse
-          ghost
-          size="small"
-          className="mb-3"
-          defaultActiveKey={["agent-process"]}
-          items={[
-            {
-              key: "agent-process",
-              label: "执行过程",
-              children: (
-                <ThoughtChain
-                  items={thoughtItems}
-                  collapsible
-                  classNames={{ itemContent: "max-h-52 overflow-y-auto" }}
-                />
-              ),
-            },
-          ]}
-        />
-      ) : null}
+      {/** 不展示执行过程！ */}
 
-      {message.content ? (
-        <AgentMarkdown content={message.content} />
-      ) : message.status === "streaming" ? (
-        <Space className="py-2 text-gray-500">
-          <Spin size="small" />
-          <span>助手正在分析并组织回答...</span>
-        </Space>
-      ) : null}
+      <div ref={contentRef}>
+        {message.content ? (
+          <AgentMarkdown content={message.content} />
+        ) : message.status === "streaming" ? (
+          <Space className="py-2 text-gray-500">
+            <Spin size="small" />
+            <span>鲸鱼智能助手正在分析并组织回答...</span>
+          </Space>
+        ) : null}
 
-      {message.error ? (
-        <Alert
-          className="mt-3"
-          type="error"
-          showIcon
-          message="本次回答没有正常完成"
-          description={message.error}
-        />
-      ) : null}
-
-      {message.durationMs ? (
-        <Typography.Text className="mt-3 block text-xs text-gray-400">
-          用时 {(message.durationMs / 1000).toFixed(1)} 秒
-        </Typography.Text>
-      ) : null}
+        {message.error ? (
+          <Alert
+            className="mt-3"
+            type="error"
+            showIcon
+            message="本次回答没有正常完成"
+            description={message.error}
+          />
+        ) : null}
+      </div>
     </Card>
   );
 }
@@ -197,25 +227,21 @@ function AssistantMessage({ message }: { message: TAgentMessage }) {
 const suggestions = [
   {
     key: "plan",
-    icon: "🗓️",
     label: "制定一周学习计划",
     description: "按年级、科目和考试日期安排复习",
   },
   {
     key: "solve",
-    icon: "🧮",
     label: "讲解一道数学题",
     description: "分步骤解释思路、公式和易错点",
   },
   {
     key: "wrong",
-    icon: "📕",
     label: "分析我的错题",
     description: "归纳薄弱知识点并给出练习建议",
   },
   {
     key: "review",
-    icon: "📚",
     label: "制定期中复习方案",
     description: "梳理重点章节与每日任务",
   },
@@ -403,8 +429,6 @@ export function LearningAgentPage({ openid }: { openid: string }) {
         role: "user",
         content: "",
         imageBase64,
-        thinking: "",
-        executions: [],
         status: "done",
       });
     }
@@ -413,8 +437,6 @@ export function LearningAgentPage({ openid }: { openid: string }) {
         id: makeId("user"),
         role: "user",
         content: message,
-        thinking: "",
-        executions: [],
         status: "done",
       });
     }
@@ -423,8 +445,6 @@ export function LearningAgentPage({ openid }: { openid: string }) {
       id: assistantId,
       role: "assistant",
       content: "",
-      thinking: "",
-      executions: [],
       status: "streaming",
     };
     const history = historyFrom(activeConversation.messages);
@@ -466,30 +486,6 @@ export function LearningAgentPage({ openid }: { openid: string }) {
           }
 
           if (failed) return;
-
-          if (event.type === "thinking") {
-            updateMessage(conversationId, assistantId, (current) => ({
-              ...current,
-              thinking: current.thinking + event.content,
-            }));
-            return;
-          }
-
-          if (event.type === "execution") {
-            updateMessage(conversationId, assistantId, (current) => ({
-              ...current,
-              executions: [
-                ...current.executions,
-                {
-                  id: makeId("execution"),
-                  stage: event.stage,
-                  tool: event.tool,
-                  content: event.content,
-                },
-              ],
-            }));
-            return;
-          }
 
           if (event.type === "answer") {
             updateMessage(conversationId, assistantId, (current) => ({
@@ -601,7 +597,8 @@ export function LearningAgentPage({ openid }: { openid: string }) {
     </div>
   );
 
-  const bubbleItems = (activeConversation?.messages ?? []).map((message) => ({
+  const conversationMessages = activeConversation?.messages ?? [];
+  const bubbleItems = conversationMessages.map((message, index) => ({
     key: message.id,
     role: message.role,
     variant: message.imageBase64 ? ("borderless" as const) : undefined,
@@ -615,7 +612,11 @@ export function LearningAgentPage({ openid }: { openid: string }) {
         />
       </div>
     ) : message.role === "assistant" ? (
-      <AssistantMessage message={message} />
+      <AssistantMessage
+        message={message}
+        question={findRecentQuestion(conversationMessages, index)}
+        userId={openid}
+      />
     ) : (
       message.content
     ),
@@ -659,22 +660,37 @@ export function LearningAgentPage({ openid }: { openid: string }) {
 
           <div className="flex min-h-0 flex-1 flex-col">
             {bubbleItems.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
+              <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-8">
                 <div className="w-full max-w-2xl">
                   <Welcome
                     variant="borderless"
+                    classNames={{}}
                     icon={
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">
-                        <RobotOutlined />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[50%] bg-blue-50 text-[14px]! text-blue-600!">
+                        <Image
+                          src="/logo.svg"
+                          alt="AI 学习助手"
+                          width={32}
+                          height={32}
+                        />
                       </div>
                     }
-                    title="今天想学习什么？"
-                    description="我可以讲解题目、整理错题、制定学习计划，也可以帮助生成练习和核验答案。"
+                    title={<div className="text-[16px]">今天想学习什么？</div>}
+                    description={
+                      <span className="lead-1 text-[12px]">
+                        我可以讲解题目、整理错题、制定学习计划，也可以帮助生成练习和核验答案。
+                      </span>
+                    }
                   />
                   <Prompts
                     className="mt-6"
                     wrap
                     items={suggestions}
+                    classNames={{
+                      list: "gap-[0.2]",
+                      item: "!gap-[0.5] !px-2 !py-2",
+                      itemContent: "[&_h6]:!text-[12px] [&_p]:!text-[10px]",
+                    }}
                     onItemClick={({ data }) => {
                       void send(String(data.label ?? ""));
                     }}
@@ -701,7 +717,7 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                       src: "/logo.svg",
                       alt: "AI 学习助手",
                     },
-                    classNames: { content: "!p-0" },
+                    classNames: { content: "!w-full !max-w-full !p-0" },
                   },
                 }}
               />

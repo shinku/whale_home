@@ -4,7 +4,18 @@ import { useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { Select } from "antd";
+
+import { DifficultySelector } from "@/components/DifficultySelector";
+import { GenerateContentButton } from "@/components/GenerateContentButton";
+import { PageSelector } from "@/components/PageSelector";
+import { SubjectOptionButton } from "@/components/SubjectOptionButton";
 import { cn } from "@/utils/cn";
+import { imageFileToTranslateDataUrl } from "../translate/image";
+import {
+  normalizeTranslateDirection,
+  type TTranslateApiResponse,
+} from "../translate/types";
 import {
   defaultOptions,
   isShowExport,
@@ -27,6 +38,10 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
   const [values, setValues] = useState(() => defaultOptions(subject));
   const [status, setStatus] = useState<TStatus>("idle");
   const [message, setMessage] = useState("");
+  const isTranslate = subject.slug === "translate";
+  const translateImage =
+    typeof values["图片"] === "string" ? values["图片"].trim() : "";
+  const isGenerateDisabled = isTranslate && !translateImage;
 
   /** 小程序 webview 里才会带 userId / openid 参数（生成接口用它当 x-user-id） */
   const userId = useMemo(() => {
@@ -39,10 +54,58 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
     setValues((prev) => ({ ...prev, [key]: value }));
 
   const generate = async () => {
+    if (isGenerateDisabled) return;
     setStatus("loading");
     setMessage("");
 
     try {
+      if (isTranslate) {
+        const response = await fetch("/api/ai/subject/translate", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(userId ? { "x-user-id": userId } : {}),
+          },
+          body: JSON.stringify({
+            source: translateImage,
+            direction: normalizeTranslateDirection(values.direction),
+          }),
+        });
+        const body = (await response
+          .json()
+          .catch(() => null)) as TTranslateApiResponse | null;
+
+        if (
+          !response.ok ||
+          body?.status !== 200 ||
+          typeof body.data?.source !== "string" ||
+          !Array.isArray(body.data.result) ||
+          !body.id
+        ) {
+          throw new Error(
+            body?.error || body?.message || "图片翻译失败，请稍后重试",
+          );
+        }
+
+        setStatus("idle");
+        const showExport = isShowExport(subject.slug);
+        if (isMiniProgram()) {
+          // 小程序结果页使用 requestid 参数，这里把翻译结果 id 通过它透传。
+          jumnToMiniProgramSubjectDetail(
+            subject.slug,
+            body.id,
+            userId,
+            showExport,
+          );
+          return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        params.delete("requestid");
+        params.set("id", body.id);
+        router.push(`/subjects/translate/detail?${params.toString()}`);
+        return;
+      }
+
       const response = await fetch(`/api/subjects/${subject.slug}`, {
         method: "POST",
         headers: {
@@ -98,17 +161,25 @@ export const SubjectRunner = ({ subject }: { subject: TSubject }) => {
             value={values[option.key]}
             disabled={status === "loading"}
             onChange={(next) => setValue(option.key, next)}
+            onImageError={(error) => {
+              setStatus("error");
+              setMessage(error);
+            }}
           />
         ))}
 
-        <button
-          type="button"
+        <GenerateContentButton
           onClick={generate}
-          disabled={status === "loading"}
-          className="h-12 w-full rounded-xl bg-blue-600 text-base font-semibold text-white transition disabled:opacity-60"
-        >
-          {status === "loading" ? "生成中..." : "生成内容"}
-        </button>
+          loading={status === "loading"}
+          disabled={isGenerateDisabled}
+          title={isGenerateDisabled ? "请先上传需要翻译的图片" : undefined}
+        />
+
+        {isTranslate && isGenerateDisabled ? (
+          <p className="text-xs text-gray-400">
+            请先上传图片，生成按钮才会启用。
+          </p>
+        ) : null}
 
         {message ? (
           <p
@@ -130,11 +201,13 @@ const OptionField = ({
   value,
   disabled,
   onChange,
+  onImageError,
 }: {
   option: TSubjectOption;
   value: string | string[] | undefined;
   disabled: boolean;
   onChange: (value: string | string[]) => void;
+  onImageError: (message: string) => void;
 }) => {
   if (option.type === "image") {
     return (
@@ -147,17 +220,26 @@ const OptionField = ({
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => onChange(String(reader.result ?? ""));
-            reader.readAsDataURL(file);
+            void imageFileToTranslateDataUrl(file)
+              .then(onChange)
+              .catch((error: unknown) =>
+                onImageError(
+                  error instanceof Error ? error.message : "图片处理失败",
+                ),
+              );
           }}
           className="text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-600"
         />
-        <span className="text-xs text-gray-400">
-          {typeof value === "string" && value
-            ? "已选择图片"
-            : (option.hint ?? "未选择图片")}
-        </span>
+        {typeof value === "string" && value ? (
+          <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={value}
+              alt="已上传图片预览"
+              className="mx-auto block h-auto max-h-[420px] w-full object-contain"
+            />
+          </div>
+        ) : null}
       </label>
     );
   }
@@ -178,6 +260,66 @@ const OptionField = ({
     );
   }
 
+  if (option.type === "select") {
+    return (
+      <label className="flex flex-col gap-2 text-sm">
+        <span className="font-medium text-gray-700">{option.label}</span>
+        <Select
+          value={typeof value === "string" ? value : option.default.toString()}
+          onChange={onChange}
+          disabled={disabled}
+          size="large"
+          aria-label={option.label}
+          className="w-full"
+          options={(option.choices ?? []).map((choice) => ({
+            value: choice,
+            label: option.choiceLabels?.[choice] ?? choice,
+          }))}
+        />
+        {option.hint ? (
+          <span className="text-xs text-gray-400">{option.hint}</span>
+        ) : null}
+      </label>
+    );
+  }
+
+  if (option.type === "page-selector") {
+    return (
+      <div className="flex flex-col gap-2 text-sm">
+        <span className="font-medium text-gray-700">{option.label}</span>
+        <PageSelector
+          options={option.choices ?? []}
+          value={typeof value === "string" ? value : option.default.toString()}
+          onChange={onChange}
+          unit={option.unit}
+          disabled={disabled}
+          label={option.label}
+        />
+        {option.hint ? (
+          <span className="text-xs text-gray-400">{option.hint}</span>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (option.type === "difficulty-selector") {
+    return (
+      <div className="flex flex-col gap-2 text-sm">
+        <span className="font-medium text-gray-700">{option.label}</span>
+        <DifficultySelector
+          options={option.choices ?? []}
+          value={typeof value === "string" ? value : option.default.toString()}
+          onChange={onChange}
+          disabled={disabled}
+          label={option.label}
+        />
+        {option.hint ? (
+          <span className="text-xs text-gray-400">{option.hint}</span>
+        ) : null}
+      </div>
+    );
+  }
+
   const choices = option.choices ?? [];
   const selected = Array.isArray(value) ? value : [value ?? ""];
 
@@ -188,9 +330,9 @@ const OptionField = ({
         {choices.map((choice) => {
           const active = selected.includes(choice);
           return (
-            <button
+            <SubjectOptionButton
               key={choice}
-              type="button"
+              active={active}
               disabled={disabled}
               onClick={() => {
                 if (!option.multiple) {
@@ -202,15 +344,9 @@ const OptionField = ({
                   : [...selected, choice];
                 onChange(next);
               }}
-              className={cn(
-                "rounded-full border px-3.5 py-1.5 text-[13px] transition disabled:opacity-60",
-                active
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-200 bg-white text-gray-600",
-              )}
             >
               {choice}
-            </button>
+            </SubjectOptionButton>
           );
         })}
       </div>

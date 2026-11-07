@@ -112,7 +112,13 @@ describe("detail 目录", () => {
       );
 
       expect(existsSync(file)).toBe(true);
-      expect(readFileSync(file, "utf8")).toContain(`slug="${slug}"`);
+      const source = readFileSync(file, "utf8");
+      if (slug === "translate") {
+        expect(source).toContain("getTranslateResultById");
+        expect(source).toContain("TranslateCanvas");
+      } else {
+        expect(source).toContain(`slug="${slug}"`);
+      }
     },
   );
 });

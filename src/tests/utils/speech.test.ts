@@ -1,13 +1,63 @@
-import { describe, expect, it } from "@jest/globals";
+import { afterEach, describe, expect, it, jest } from "@jest/globals";
 
-import { selectBritishFemaleVoice, speakEnglish } from "@/utils/speech";
+import {
+  BRITISH_FEMALE_SPEECH_SETTINGS,
+  selectBritishFemaleVoice,
+  speakEnglish,
+} from "@/utils/speech";
 
 const voice = (name: string, lang: string) =>
   ({ name, lang }) as SpeechSynthesisVoice;
 
 describe("speakEnglish", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "window");
+    Reflect.deleteProperty(globalThis, "SpeechSynthesisUtterance");
+  });
+
   it("浏览器不支持时给出明确错误", () => {
     expect(() => speakEnglish("hero")).toThrow("当前浏览器不支持语音朗读");
+  });
+
+  it("使用英式女声并应用柔和的语速、音高和音量", () => {
+    const speak = jest.fn();
+    const britishVoice = voice("Google UK English Female", "en-GB");
+
+    class MockSpeechSynthesisUtterance {
+      lang = "";
+      rate = 1;
+      pitch = 1;
+      volume = 1;
+      voice?: SpeechSynthesisVoice;
+      onend?: () => void;
+      onerror?: (event: SpeechSynthesisErrorEvent) => void;
+
+      constructor(public text: string) {}
+    }
+
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        speechSynthesis: {
+          cancel: jest.fn(),
+          getVoices: () => [britishVoice],
+          speak,
+        },
+      },
+    });
+    Object.defineProperty(globalThis, "SpeechSynthesisUtterance", {
+      configurable: true,
+      value: MockSpeechSynthesisUtterance,
+    });
+
+    speakEnglish("  Hello  ");
+
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(speak.mock.calls[0][0]).toMatchObject({
+      ...BRITISH_FEMALE_SPEECH_SETTINGS,
+      text: "Hello",
+      voice: britishVoice,
+    });
   });
 });
 

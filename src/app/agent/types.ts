@@ -1,12 +1,5 @@
 export type TAgentExecutionStage = "start" | "end" | "error" | "note";
 
-export type TAgentExecution = {
-  id: string;
-  stage: TAgentExecutionStage;
-  tool?: string;
-  content: string;
-};
-
 export type TAgentMessageStatus = "streaming" | "done" | "error" | "stopped";
 
 export type TAgentMessage = {
@@ -14,8 +7,6 @@ export type TAgentMessage = {
   role: "user" | "assistant";
   content: string;
   imageBase64?: string;
-  thinking: string;
-  executions: TAgentExecution[];
   status: TAgentMessageStatus;
   requestId?: string;
   durationMs?: number;

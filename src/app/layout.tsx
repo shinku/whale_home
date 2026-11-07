@@ -1,6 +1,6 @@
-
-
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { Icp } from "@/components/Icp";
+import { GlobalModalProvider } from "@/components/GlobalModalProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   title: "welcome using whalebean",
   description: "鲸豆智能，AI 驱动生活美好。",
   icons: {
-    icon: "logo.svg"
-  }
+    icon: "logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -33,8 +33,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
-        <Icp/>
+        <AntdRegistry>
+          <GlobalModalProvider>
+            {children}
+            <Icp />
+          </GlobalModalProvider>
+        </AntdRegistry>
       </body>
     </html>
   );

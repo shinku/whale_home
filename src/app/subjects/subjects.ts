@@ -15,7 +15,13 @@ export type TSubjectSlug =
   | "formula"
   | "words";
 
-export type TSubjectOptionType = "chips" | "text" | "image";
+export type TSubjectOptionType =
+  | "chips"
+  | "select"
+  | "text"
+  | "image"
+  | "page-selector"
+  | "difficulty-selector";
 
 export type TSubjectOption = {
   /** 提交给 AI 的字段名 */
@@ -27,9 +33,13 @@ export type TSubjectOption = {
   multiple?: boolean;
   /** chips 的可选项 */
   choices?: string[];
+  /** select 选项值对应的展示文案 */
+  choiceLabels?: Record<string, string>;
   default: string | string[];
   placeholder?: string;
   hint?: string;
+  /** page-selector 的选项单位，例如“题”“页” */
+  unit?: string;
 };
 
 export type TSubject = {
@@ -84,7 +94,7 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "难度",
         label: "难度",
-        type: "chips",
+        type: "difficulty-selector",
         choices: ["简单", "中等", "困难"],
         default: "中等",
       },
@@ -99,9 +109,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "题目数量",
         label: "题目数量",
-        type: "chips",
+        type: "page-selector",
         choices: numberRange(10, 100, 10),
         default: "20",
+        unit: "题",
       },
     ],
   },
@@ -136,9 +147,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "题目数量",
         label: "题目数量",
-        type: "chips",
+        type: "page-selector",
         choices: ["10", "20", "30"],
         default: "10",
+        unit: "题",
       },
     ],
   },
@@ -159,9 +171,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "页数",
         label: "页数（每页 20 字）",
-        type: "chips",
+        type: "page-selector",
         choices: numberRange(1, 10, 1),
         default: "1",
+        unit: "页",
       },
     ],
   },
@@ -178,12 +191,11 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "难度",
         label: "难度",
-        type: "chips",
+        type: "difficulty-selector",
         choices: [
           "⭐（一二年级）",
           "⭐⭐（三四年级）",
           "⭐⭐⭐（五六年级）",
-          "⭐⭐⭐⭐（初高中）",
         ],
         default: "⭐⭐（三四年级）",
       },
@@ -197,9 +209,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "题目数量",
         label: "题目数量",
-        type: "chips",
+        type: "page-selector",
         choices: numberRange(10, 100, 10),
         default: "10",
+        unit: "题",
       },
     ],
   },
@@ -211,18 +224,15 @@ export const SUBJECTS: TSubject[] = [
     resultTitle: "拍照翻译",
     options: [
       {
-        key: "源语言",
-        label: "源语言",
-        type: "chips",
-        choices: ["自动识别", "中文", "英文"],
-        default: "自动识别",
-      },
-      {
-        key: "目标语言",
-        label: "目标语言",
-        type: "chips",
-        choices: ["中文", "英文"],
-        default: "中文",
+        key: "direction",
+        label: "翻译方向",
+        type: "select",
+        choices: ["en_to_zh", "zh_to_en"],
+        choiceLabels: {
+          en_to_zh: "英译中",
+          zh_to_en: "中译英",
+        },
+        default: "en_to_zh",
       },
       {
         key: "图片",
@@ -230,13 +240,6 @@ export const SUBJECTS: TSubject[] = [
         type: "image",
         default: "",
         hint: "支持 JPG / PNG，图片会随请求一起提交给翻译模型",
-      },
-      {
-        key: "文字",
-        label: "或直接粘贴文字",
-        type: "text",
-        default: "",
-        placeholder: "没有图片时可以在这里输入要翻译的内容",
       },
     ],
   },
@@ -268,9 +271,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "题目数量",
         label: "题目数量",
-        type: "chips",
+        type: "page-selector",
         choices: numberRange(5, 40, 5),
         default: "10",
+        unit: "条",
       },
       {
         key: "模式",
@@ -308,9 +312,10 @@ export const SUBJECTS: TSubject[] = [
       {
         key: "题目数量",
         label: "题目数量",
-        type: "chips",
+        type: "page-selector",
         choices: numberRange(10, 100, 10),
         default: "15",
+        unit: "题",
       },
     ],
   },

@@ -156,5 +156,8 @@ export const streamAgentChat = async ({
     throw new Error("当前浏览器不支持 ReadableStream");
   }
 
-  await readAgentEventStream(response.body, onEvent);
+  await readAgentEventStream(response.body, (event) => {
+    if (event.type === "thinking" || event.type === "execution") return;
+    onEvent(event);
+  });
 };
