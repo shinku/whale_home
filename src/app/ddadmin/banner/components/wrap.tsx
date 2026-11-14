@@ -20,7 +20,8 @@ import {
   Upload,
   message,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAdminUser } from "../../components/AdminUserProvider";
 import { doRequest } from "../../utils/request";
 
 interface Banner {
@@ -75,6 +76,7 @@ const typeLabelMap: Record<string, string> = {
 };
 
 export default function BannerPage() {
+  const { openid } = useAdminUser();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -84,14 +86,10 @@ export default function BannerPage() {
   const [formData, setFormData] = useState<BannerFormData>(createEmptyFormData);
   const [messageApi, contextHolder] = message.useMessage();
 
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await doRequest("/api/admin/banner?lane=whale");
+      const res = await doRequest("/api/admin/banner?lane=whale", {}, openid);
       const data = res.data.list;
       setBanners(data);
     } catch (error) {
@@ -99,7 +97,11 @@ export default function BannerPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [openid]);
+
+  useEffect(() => {
+    void fetchBanners();
+  }, [fetchBanners]);
 
   const handleSubmit = async () => {
     if (!formData.banner_image) {
@@ -122,10 +124,14 @@ export default function BannerPage() {
       if (formData.banner_image instanceof File) {
         const uploadFormData = new FormData();
         uploadFormData.append("file", formData.banner_image);
-        const uploadRes = await doRequest("/api/admin/file_upload", {
-          method: "POST",
-          body: uploadFormData,
-        });
+        const uploadRes = await doRequest(
+          "/api/admin/file_upload",
+          {
+            method: "POST",
+            body: uploadFormData,
+          },
+          openid,
+        );
 
         bannerImageUrl = uploadRes.data;
       }
@@ -136,13 +142,17 @@ export default function BannerPage() {
         action: `${formData.action || "link"}::${formData.content}`,
       };
 
-      const res = await doRequest("/api/admin/banner", {
-        method: editingId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          editingId ? { ...payload, id: editingId } : payload,
-        ),
-      });
+      const res = await doRequest(
+        "/api/admin/banner",
+        {
+          method: editingId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            editingId ? { ...payload, id: editingId } : payload,
+          ),
+        },
+        openid,
+      );
 
       if (res.status === 200) {
         setShowForm(false);
@@ -185,14 +195,20 @@ export default function BannerPage() {
   };
 
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       {contextHolder}
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <Typography.Title level={3} style={{ margin: 0 }}>
           Banner管理
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateForm}>
+        <Button
+          className="!text-black font-[400]"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreateForm}
+          size="small"
+        >
           新增Banner
         </Button>
       </div>
@@ -212,8 +228,8 @@ export default function BannerPage() {
                 <Image
                   src={previewImage}
                   alt="Banner Preview"
-                  width={160}
-                  height={90}
+                  width={80}
+                  height={45}
                   style={{ objectFit: "cover", borderRadius: 8 }}
                 />
               )}
@@ -298,69 +314,77 @@ export default function BannerPage() {
         </Form>
       </Modal>
 
-      <Typography.Title level={5}>Banner列表</Typography.Title>
+      <Typography.Title level={5} className="shrink-0">
+        Banner列表
+      </Typography.Title>
 
-      <Spin spinning={loading}>
-        {banners.length === 0 && !loading ? (
-          <Empty description="暂无Banner数据" />
-        ) : (
-          <Row gutter={[16, 16]}>
-            {banners.map((banner) => (
-              <Col key={banner.id} xs={24} sm={12} xl={8}>
-                <Card
-                  hoverable
-                  cover={
-                    <Image
-                      src={banner.banner_image}
-                      alt={banner.name || "Banner Image"}
-                      style={{
-                        width: "100%",
-                        height: 160,
-                        objectFit: "cover",
-                      }}
-                    />
-                  }
-                  actions={[
-                    <Button
-                      key="edit"
-                      type="link"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEdit(banner)}
-                    >
-                      编辑
-                    </Button>,
-                  ]}
-                >
-                  <Descriptions
-                    size="small"
-                    column={1}
-                    colon={false}
-                    styles={{ label: { width: 56 } }}
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <Spin spinning={loading}>
+          {banners.length === 0 && !loading ? (
+            <Empty description="暂无Banner数据" />
+          ) : (
+            <Row gutter={[8, 8]}>
+              {banners.map((banner) => (
+                <Col key={banner.id} xs={24} sm={12} xl={8}>
+                  <Card
+                    hoverable
+                    cover={
+                      <div className="flex justify-center bg-gray-50 px-4 py-2">
+                        <Image
+                          src={banner.banner_image}
+                          alt={banner.name || "Banner Image"}
+                          style={{
+                            width: "50%",
+                            height: 80,
+                            objectFit: "cover",
+                          }}
+                        />
+                      </div>
+                    }
+                    actions={[
+                      <Button
+                        key="edit"
+                        type="link"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(banner)}
+                      >
+                        编辑
+                      </Button>,
+                    ]}
                   >
-                    <Descriptions.Item label="名称">
-                      {banner.name}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="类型">
-                      {typeLabelMap[banner.type] || banner.type}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Action">
-                      {banner.action.split("::")[0]}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="内容">
-                      {banner.action.split("::")[1]}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="状态">
-                      <Tag color={banner.status === "active" ? "green" : "red"}>
-                        {banner.status}
-                      </Tag>
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        )}
-      </Spin>
+                    <Descriptions
+                      size="small"
+                      column={1}
+                      colon={false}
+                      styles={{ label: { width: 56 } }}
+                    >
+                      <Descriptions.Item label="名称">
+                        {banner.name}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="类型">
+                        {typeLabelMap[banner.type] || banner.type}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Action">
+                        {banner.action.split("::")[0]}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="内容">
+                        {banner.action.split("::")[1]}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="状态">
+                        <Tag
+                          color={banner.status === "active" ? "green" : "red"}
+                        >
+                          {banner.status}
+                        </Tag>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Spin>
+      </div>
     </div>
   );
 }

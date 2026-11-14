@@ -17,6 +17,7 @@ import {
   type TableColumnsType,
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
+import { useAdminUser } from "../../components/AdminUserProvider";
 import { adminRequest } from "../../utils/adminRequest";
 
 interface LisenceGrant {
@@ -75,7 +76,9 @@ const grantColumns: TableColumnsType<LisenceGrant> = [
     key: "service_list",
     render: (services: string[]) => (
       <Space size={4} wrap>
-        {services?.map((service) => <Tag key={service}>{service}</Tag>)}
+        {services?.map((service) => (
+          <Tag key={service}>{service}</Tag>
+        ))}
       </Space>
     ),
   },
@@ -123,6 +126,7 @@ const grantColumns: TableColumnsType<LisenceGrant> = [
 ];
 
 export default function LisencePage() {
+  const { openid } = useAdminUser();
   const [data, setData] = useState<LisenceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +135,11 @@ export default function LisencePage() {
     setLoading(true);
     setError(null);
     try {
-      const res: LisenceResponse = await adminRequest("/api/lisence/hehe");
+      const res: LisenceResponse = await adminRequest(
+        "/api/lisence/hehe",
+        {},
+        openid,
+      );
       if (res.status === 200) {
         setData(res.data);
       } else {
@@ -143,14 +151,14 @@ export default function LisencePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [openid]);
 
   useEffect(() => {
     fetchLisence();
   }, [fetchLisence]);
 
   return (
-    <div className=" mx-auto">
+    <div className="mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <Typography.Title level={3} style={{ margin: 0 }}>
           HEHE&apos;S LISENCE

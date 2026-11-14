@@ -1,10 +1,15 @@
-export const adminRequest = async (url: string, options: RequestInit = {}) => {
+export const adminRequest = async (
+  url: string,
+  options: RequestInit = {},
+  openid = "",
+) => {
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
+  if (openid) headers.set("x-user-id", openid);
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...options.headers,
-      "Content-Type": "application/json",
-    },
+    headers,
   });
 
   if (!response.ok) {

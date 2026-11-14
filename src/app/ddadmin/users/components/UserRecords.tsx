@@ -9,6 +9,7 @@ import {
   type TableColumnsType,
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
+import { useAdminUser } from "../../components/AdminUserProvider";
 import { adminRequest } from "../../utils/adminRequest";
 
 interface UserRecord {
@@ -81,6 +82,7 @@ const columns: TableColumnsType<UserRecordRow> = [
 ];
 
 export default function UserRecords() {
+  const { openid } = useAdminUser();
   const [records, setRecords] = useState<UserRecordRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -91,6 +93,8 @@ export default function UserRecords() {
       const offset = currentPage * pageSize;
       const res: UserRecordsResponse = await adminRequest(
         `/api/admin/summary/users_record?offset=${offset}&page=${pageSize}`,
+        {},
+        openid,
       );
 
       if (res.status === 200) {
@@ -106,7 +110,7 @@ export default function UserRecords() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, openid]);
 
   useEffect(() => {
     fetchRecords();
@@ -127,7 +131,7 @@ export default function UserRecords() {
         pagination={false}
       />
 
-      <div className="mt-4 flex justify-center items-center">
+      <div className="mt-4 flex items-center justify-center">
         <Space size="middle">
           <Button
             disabled={currentPage === 0}

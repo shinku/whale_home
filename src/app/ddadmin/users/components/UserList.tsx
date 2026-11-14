@@ -2,6 +2,7 @@
 
 import { Table, Typography, type TableColumnsType } from "antd";
 import { useCallback, useEffect, useState } from "react";
+import { useAdminUser } from "../../components/AdminUserProvider";
 import { adminRequest } from "../../utils/adminRequest";
 
 interface User {
@@ -59,6 +60,7 @@ const columns: TableColumnsType<User> = [
 ];
 
 export default function UserList() {
+  const { openid } = useAdminUser();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -70,6 +72,8 @@ export default function UserList() {
       const offset = currentPage * pageSize;
       const res: UserListResponse = await adminRequest(
         `/api/admin/summary/users?offset=${offset}&page=${pageSize}`,
+        {},
+        openid,
       );
 
       if (res.status === 200) {
@@ -81,7 +85,7 @@ export default function UserList() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, openid]);
 
   useEffect(() => {
     fetchUsers();
