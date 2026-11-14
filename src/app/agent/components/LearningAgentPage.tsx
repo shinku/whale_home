@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { RobotOutlined } from "@ant-design/icons";
 import {
   AddOutline,
   CloseOutline,
@@ -794,6 +793,9 @@ export function LearningAgentPage({ openid }: { openid: string }) {
                         (!input.trim() && !pendingImage)
                       }
                       aria-label="发送消息"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onTouchStart={(event) => event.stopPropagation()}
                       onClick={() => {
                         void send(input);
                       }}

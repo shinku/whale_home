@@ -1,14 +1,19 @@
 import { getApiHost } from "@/utils";
 
 
-export const POST = async (request: Request) => { 
+export const POST = async (request: Request) => {
   const url = getApiHost()+"api/file/upload";
   console.log(request.headers.get('content-type'));
   try{
     const formData = await request.formData();
-
+    const headers = new Headers();
+    const userId = request.headers.get("x-user-id");
+    if (userId) {
+      headers.set("x-user-id", userId);
+    }
     const res = await fetch(url, {
       method: 'POST',
+      headers,
       body: formData
     });
     if (!res.ok) {
@@ -21,5 +26,5 @@ export const POST = async (request: Request) => {
     console.error('File upload error:', e);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
-  
+
 }
